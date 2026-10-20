@@ -17,6 +17,7 @@ test('file roundtrip split and overwrite protection',()=>{
   assert.equal(r.status,0,r.stderr||r.stdout);assert.equal(JSON.parse(readFileSync(out)).tracks.children[0].children.length,3);
   assert.equal(cli('validate',out).status,0);
   const before=readFileSync(out,'utf8');assert.equal(cli('export',fixture,'--output',out).status,2);assert.equal(readFileSync(out,'utf8'),before);
+  const invalidUtf8=join(d,'invalid-utf8.otio');writeFileSync(invalidUtf8,Buffer.from([0xff,0xfe,0xff]));assert.equal(cli('inspect',invalidUtf8).status,2);
   const bad=join(d,'bad.otio');const t=JSON.parse(readFileSync(fixture));t.tracks.children[0].children[1].source_range.duration.value=9999;writeFileSync(bad,JSON.stringify(t));assert.equal(cli('validate',bad).status,1);
  }finally{rmSync(d,{recursive:true,force:true});}
 });
