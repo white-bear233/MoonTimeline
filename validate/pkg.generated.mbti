@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/validate"
+
+import {
+  "white-bear233/moontimeline/model",
+}
+
+// Values
+pub fn has_errors(Array[Issue]) -> Bool
+
+pub fn validate(@model.Timeline) -> Array[Issue]
+
+// Errors
+
+// Types and methods
+pub(all) struct Issue {
+  code : String
+  severity : Severity
+  path : String
+  message : String
+}
+
+pub(all) enum Severity {
+  Error
+  Warning
+  Info
+}
+
+// Type aliases
+
+// Traits

@@ -65,7 +65,6 @@ test "mixed rates disabled items and global labels do not shift layout" {
         @time.RationalTime::new(60.0, 30.0).unwrap(),
       ).unwrap()
       t.tracks.children[0].children[0] = @model.Gap({
-        ..g,
         source_range: r,
         attributes: { ..g.attributes, enabled: false, },
       })
