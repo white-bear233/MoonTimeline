@@ -68,18 +68,24 @@ fn optional(o : Map[String, Json], key : String) -> Json {
 }
 
 ///|
+/// OTIO optional strings are null in some writers; treat them as empty and keep
+/// the original null in `extra` so a round trip stays faithful.
 fn name(o : Map[String, Json], path : String) -> String raise Decode {
   match o.get("name") {
-    None => ""
+    None | Some(Null) => ""
     Some(v) => string(v, path + "/name")
   }
 }
 
 ///|
 fn metadata(o : Map[String, Json], path : String) -> Json raise Decode {
-  let j = o.get("metadata").unwrap_or(Json::empty_object())
-  let _ = object(j, path + "/metadata")
-  j
+  match o.get("metadata") {
+    None | Some(Null) => Json::empty_object()
+    Some(v) => {
+      let _ = object(v, path + "/metadata")
+      v
+    }
+  }
 }
 
 ///|
@@ -105,6 +111,8 @@ fn schema(
 }
 
 ///|
+/// Leaf values keep a strict field set: an unknown key there cannot be preserved
+/// without changing the value's meaning.
 fn fields(
   o : Map[String, Json],
   allowed : Array[String],
@@ -118,6 +126,34 @@ fn fields(
         "Field is outside the supported subset",
       )
     }
+  }
+}
+
+///|
+/// Keys the model computes. Everything else moves to `extra` and is written back
+/// verbatim, so vendor extensions and newer OTIO fields survive a round trip.
+fn extra_fields(
+  o : Map[String, Json],
+  consumed : Array[String],
+) -> Map[String, Json] {
+  let m : Map[String, Json] = Map([])
+  for key, value in o {
+    if !consumed.contains(key) {
+      m[key] = value
+    }
+  }
+  m
+}
+
+///|
+/// Keep null name/metadata exactly as written; the model uses empty defaults.
+fn keep_null(
+  o : Map[String, Json],
+  key : String,
+  extra : Map[String, Json],
+) -> Unit {
+  if o.get(key) is Some(Null) {
+    extra[key] = Json::null()
   }
 }
 
@@ -161,20 +197,8 @@ fn maybe_range(j : Json, path : String) -> @range.TimeRange? raise Decode {
 fn attributes(
   o : Map[String, Json],
   path : String,
+  structural : Array[String],
 ) -> @model.Attributes raise Decode {
-  for key in ["effects", "markers"] {
-    match o.get(key) {
-      None => ()
-      Some(v) =>
-        if array(v, path + "/" + key).length() != 0 {
-          fail(
-            "unsupported_feature",
-            path + "/" + key,
-            "Nonempty effects/markers are not supported",
-          )
-        }
-    }
-  }
   let enabled = match o.get("enabled") {
     None | Some(True) => true
     Some(False) => false
@@ -185,37 +209,67 @@ fn attributes(
     Null | String(_) => ()
     _ => fail("type", path + "/color", "Expected string or null")
   }
-  { name: name(o, path), metadata: metadata(o, path), enabled, color, }
+  let consumed = ["OTIO_SCHEMA", "name", "metadata", "enabled", "color"]
+  for key in structural {
+    consumed.push(key)
+  }
+  let extra = extra_fields(o, consumed)
+  keep_null(o, "name", extra)
+  keep_null(o, "metadata", extra)
+  {
+    name: name(o, path),
+    metadata: metadata(o, path),
+    enabled,
+    color,
+    extra: Json::object(extra),
+  }
 }
 
 ///|
 fn media(j : Json, path : String) -> @model.MediaReference raise Decode {
   let o = object(j, path)
   let tag = string(field(o, "OTIO_SCHEMA", path), path + "/OTIO_SCHEMA")
+  let available = maybe_range(
+    optional(o, "available_range"),
+    path + "/available_range",
+  )
+  let bounds = optional(o, "available_image_bounds")
+  let consumed = [
+    "OTIO_SCHEMA", "name", "metadata", "available_range", "available_image_bounds",
+  ]
   let kind = match tag {
-    "ExternalReference.1" =>
+    "ExternalReference.1" => {
+      consumed.push("target_url")
       @model.External(
         string(field(o, "target_url", path), path + "/target_url"),
       )
+    }
     "MissingReference.1" => @model.Missing
-    _ => fail("unsupported_schema", path + "/OTIO_SCHEMA", tag)
+    _ => @model.Opaque(Json::object(o))
   }
-  let allowed = [
-    "OTIO_SCHEMA", "name", "metadata", "available_range", "available_image_bounds",
-  ]
-  if tag == "ExternalReference.1" {
-    allowed.push("target_url")
-  }
-  fields(o, allowed, path)
+  let extra = extra_fields(o, consumed)
+  keep_null(o, "name", extra)
+  keep_null(o, "metadata", extra)
   {
     name: name(o, path),
     metadata: metadata(o, path),
     kind,
-    available_range: maybe_range(
-      optional(o, "available_range"),
-      path + "/available_range",
-    ),
-    available_image_bounds: optional(o, "available_image_bounds"),
+    available_range: available,
+    available_image_bounds: bounds,
+    extra: Json::object(extra),
+  }
+}
+
+///|
+/// Clip.1 may carry a null media_reference: the clip simply has no media.
+fn missing_reference() -> @model.MediaReference {
+  {
+    name: "",
+    metadata: Json::empty_object(),
+    kind: @model.Missing,
+    available_range: None,
+    available_image_bounds: Json::null(),
+    extra: Json::empty_object(),
   }
 }
 
@@ -223,19 +277,13 @@ fn media(j : Json, path : String) -> @model.MediaReference raise Decode {
 fn item(j : Json, path : String) -> @model.Item raise Decode {
   let o = object(j, path)
   let tag = string(field(o, "OTIO_SCHEMA", path), path + "/OTIO_SCHEMA")
-  if tag != "Clip.2" && tag != "Gap.1" {
-    fail("unsupported_schema", path + "/OTIO_SCHEMA", tag)
+  if tag != "Clip.1" && tag != "Clip.2" && tag != "Gap.1" {
+    return @model.Opaque(Json::object(o))
   }
-  let allowed = [
-    "OTIO_SCHEMA", "name", "metadata", "source_range", "effects", "markers", "enabled",
-    "color",
+  let structural = [
+    "source_range", "media_references", "media_reference", "active_media_reference_key",
   ]
-  if tag == "Clip.2" {
-    allowed.push("media_references")
-    allowed.push("active_media_reference_key")
-  }
-  fields(o, allowed, path)
-  let attrs = attributes(o, path)
+  let attrs = attributes(o, path, structural)
   if tag == "Gap.1" {
     return @model.Gap({
       attributes: attrs,
@@ -245,24 +293,33 @@ fn item(j : Json, path : String) -> @model.Item raise Decode {
       ),
     })
   }
-  let refs = object(
-    field(o, "media_references", path),
-    path + "/media_references",
-  )
-  let parsed : Map[String, @model.MediaReference] = Map([])
-  for key, value in refs {
-    parsed[key] = media(value, child(path + "/media_references", key))
-  }
-  let active = string(
-    field(o, "active_media_reference_key", path),
-    path + "/active_media_reference_key",
-  )
-  if parsed.get(active) is None {
-    fail(
-      "missing_media",
-      path + "/active_media_reference_key",
-      "Active reference does not exist",
+  let refs : Map[String, @model.MediaReference] = Map([])
+  let active = if tag == "Clip.1" {
+    refs["DEFAULT_MEDIA"] = match field(o, "media_reference", path) {
+      Null => missing_reference()
+      v => media(v, path + "/media_reference")
+    }
+    "DEFAULT_MEDIA"
+  } else {
+    let raw = object(
+      field(o, "media_references", path),
+      path + "/media_references",
     )
+    for key, value in raw {
+      refs[key] = media(value, child(path + "/media_references", key))
+    }
+    let key = string(
+      field(o, "active_media_reference_key", path),
+      path + "/active_media_reference_key",
+    )
+    if refs.get(key) is None {
+      fail(
+        "missing_media",
+        path + "/active_media_reference_key",
+        "Active reference does not exist",
+      )
+    }
+    key
   }
   @model.Clip({
     attributes: attrs,
@@ -270,40 +327,38 @@ fn item(j : Json, path : String) -> @model.Item raise Decode {
       optional(o, "source_range"),
       path + "/source_range",
     ),
-    media_references: parsed,
+    media_references: refs,
     active_media_reference_key: active,
   })
 }
 
 ///|
+/// Stack and Track share their fields; Sequence.1 is the historical Track name.
 fn composition(
   o : Map[String, Json],
-  tag : String,
+  expected : String,
   path : String,
-) -> @model.Attributes raise Decode {
-  schema(o, tag, path)
-  let allowed = [
-    "OTIO_SCHEMA", "name", "metadata", "source_range", "effects", "markers", "enabled",
-    "color", "children",
-  ]
-  if tag == "Track.1" {
-    allowed.push("kind")
-  }
-  fields(o, allowed, path)
-  if !(optional(o, "source_range") is Null) {
+) -> (@model.Attributes, @range.TimeRange?) raise Decode {
+  let actual = string(field(o, "OTIO_SCHEMA", path), path + "/OTIO_SCHEMA")
+  let accepted = actual == expected ||
+    (expected == "Track.1" && actual == "Sequence.1")
+  if !accepted {
     fail(
-      "unsupported_feature",
-      path + "/source_range",
-      "Composition trimming is not supported",
+      "unsupported_schema",
+      path + "/OTIO_SCHEMA",
+      "Expected " + expected + ", got " + actual,
     )
   }
-  attributes(o, path)
+  let structural = ["children", "kind", "source_range"]
+  let attrs = attributes(o, path, structural)
+  let source = maybe_range(optional(o, "source_range"), path + "/source_range")
+  (attrs, source)
 }
 
 ///|
 fn track(j : Json, path : String) -> @model.Track raise Decode {
   let o = object(j, path)
-  let attrs = composition(o, "Track.1", path)
+  let (attrs, source) = composition(o, "Track.1", path)
   let kind = match string(field(o, "kind", path), path + "/kind") {
     "Video" => @model.Video
     "Audio" => @model.Audio
@@ -314,20 +369,15 @@ fn track(j : Json, path : String) -> @model.Track raise Decode {
   for i = 0; i < children.length(); i = i + 1 {
     items.push(item(children[i], path + "/children/" + i.to_string()))
   }
-  { attributes: attrs, kind, children: items, }
+  { attributes: attrs, kind, source_range: source, children: items, }
 }
 
 ///|
 fn timeline(j : Json) -> @model.Timeline raise Decode {
   let o = object(j, "")
   schema(o, "Timeline.1", "")
-  fields(
-    o,
-    ["OTIO_SCHEMA", "name", "metadata", "global_start_time", "tracks"],
-    "",
-  )
   let stack = object(field(o, "tracks", ""), "/tracks")
-  let attrs = composition(stack, "Stack.1", "/tracks")
+  let (attrs, stack_range) = composition(stack, "Stack.1", "/tracks")
   let children = array(field(stack, "children", "/tracks"), "/tracks/children")
   let tracks = []
   for i = 0; i < children.length(); i = i + 1 {
@@ -337,22 +387,109 @@ fn timeline(j : Json) -> @model.Timeline raise Decode {
     Null => None
     v => Some(time(v, "/global_start_time"))
   }
+  let extra = extra_fields(o, [
+    "OTIO_SCHEMA", "name", "metadata", "global_start_time", "tracks",
+  ])
+  keep_null(o, "name", extra)
+  keep_null(o, "metadata", extra)
   {
     name: name(o, ""),
     metadata: metadata(o, ""),
     global_start_time: global,
-    tracks: { attributes: attrs, children: tracks, },
+    tracks: { attributes: attrs, source_range: stack_range, children: tracks, },
+    extra: Json::object(extra),
   }
 }
 
 ///|
-/// Parse a bounded OTIO subset. Paths are JSON Pointers; the root is "".
+fn is_word_char(c : Char) -> Bool {
+  (c >= 'a' && c <= 'z') ||
+  (c >= 'A' && c <= 'Z') ||
+  (c >= '0' && c <= '9') ||
+  c == '_'
+}
+
+///|
+fn matches_at(chars : Array[Char], i : Int32, token : String) -> Bool {
+  let t = token.to_array()
+  if i + t.length() > chars.length() {
+    return false
+  }
+  for k = 0; k < t.length(); k = k + 1 {
+    if chars[i + k] != t[k] {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// Python's json module writes Infinity and NaN by default, so real OTIO exports
+/// can contain them. JSON cannot represent those values, so the literal becomes
+/// null; the rest of the document still reads. Strings are left untouched.
+fn coerce_nonfinite(source : String) -> String {
+  let chars = source.to_array()
+  let n = chars.length()
+  let out = StringBuilder()
+  let mut i = 0
+  let mut in_string = false
+  while i < n {
+    let c = chars[i]
+    if in_string {
+      out.write_char(c)
+      if c == '\\' && i + 1 < n {
+        out.write_char(chars[i + 1])
+        i = i + 2
+        continue
+      }
+      if c == '"' {
+        in_string = false
+      }
+      i = i + 1
+      continue
+    }
+    if c == '"' {
+      in_string = true
+      out.write_char(c)
+      i = i + 1
+      continue
+    }
+    if i == 0 || !is_word_char(chars[i - 1]) {
+      let token = if matches_at(chars, i, "-Infinity") {
+        "-Infinity"
+      } else if matches_at(chars, i, "Infinity") {
+        "Infinity"
+      } else if matches_at(chars, i, "Inf") {
+        "Inf"
+      } else if matches_at(chars, i, "NaN") {
+        "NaN"
+      } else {
+        ""
+      }
+      if token != "" {
+        let after = i + token.to_array().length()
+        if after >= n || !is_word_char(chars[after]) {
+          out.write_string("null")
+          i = after
+          continue
+        }
+      }
+    }
+    out.write_char(c)
+    i = i + 1
+  }
+  out.to_string()
+}
+
+///|
+/// Parse OTIO. Unknown nodes are preserved instead of rejected; paths are JSON
+/// Pointers and the root is "".
 pub fn read(source : String) -> Result[@model.Timeline, Diagnostic] {
-  if source.length() > 4000000 {
+  if source.length() > 16000000 {
     return Err({
       code: "input_limit",
       path: "",
-      message: "Input exceeds 4 million UTF-16 code units",
+      message: "Input exceeds 16 million UTF-16 code units",
     })
   }
   let parsed = @json.parse(
@@ -360,8 +497,19 @@ pub fn read(source : String) -> Result[@model.Timeline, Diagnostic] {
     max_nesting_depth=64,
     reject_duplicate_keys=true,
   ) catch {
-    error =>
-      return Err({ code: "invalid_json", path: "", message: error.to_string(), })
+    _ =>
+      @json.parse(
+        coerce_nonfinite(source),
+        max_nesting_depth=64,
+        reject_duplicate_keys=true,
+      ) catch {
+        error =>
+          return Err({
+            code: "invalid_json",
+            path: "",
+            message: error.to_string(),
+          })
+      }
   }
   Ok(timeline(parsed)) catch {
     Decode(error) => Err(error)

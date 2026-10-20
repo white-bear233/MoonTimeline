@@ -10,6 +10,8 @@ import {
 // Values
 pub fn layout(@model.Timeline) -> Result[Layout, String]
 
+pub fn opaque_schema(Json) -> String
+
 pub fn source_range(@model.Item) -> Result[@range.TimeRange, String]
 
 // Errors

@@ -1,21 +1,32 @@
 ///|
 /// Common OTIO fields. Metadata is retained as arbitrary JSON.
+/// `extra` keeps fields outside the computed subset so a read-write round trip
+/// does not drop upstream data (markers, effects, vendor extensions).
 pub(all) struct Attributes {
   name : String
   metadata : Json
   enabled : Bool
   color : Json
+  extra : Json
 }
 
 ///|
 pub fn Attributes::new(name : String) -> Attributes {
-  { name, metadata: Json::empty_object(), enabled: true, color: Json::null(), }
+  {
+    name,
+    metadata: Json::empty_object(),
+    enabled: true,
+    color: Json::null(),
+    extra: Json::empty_object(),
+  }
 }
 
 ///|
+/// Known media reference kinds. Anything else is kept opaque.
 pub(all) enum MediaKind {
   External(String)
   Missing
+  Opaque(Json)
 }
 
 ///|
@@ -25,6 +36,7 @@ pub(all) struct MediaReference {
   kind : MediaKind
   available_range : @range.TimeRange?
   available_image_bounds : Json
+  extra : Json
 }
 
 ///|
@@ -71,6 +83,8 @@ pub(all) struct Gap {
 pub(all) enum Item {
   Clip(Clip)
   Gap(Gap)
+  /// Preserved verbatim (for example Transition.1) but not part of the computed subset.
+  Opaque(Json)
 }
 
 ///|
@@ -81,16 +95,19 @@ pub(all) enum TrackKind {
 
 ///|
 /// Children are sequential. Their placement is computed by the later layout module.
+/// `source_range` trims the composition; a non-empty value is preserved but not computed.
 pub(all) struct Track {
   attributes : Attributes
   kind : TrackKind
+  source_range : @range.TimeRange?
   children : Array[Item]
 }
 
 ///|
-/// Root tracks are simultaneous. Nested stacks are outside the first subset.
+/// Root tracks are simultaneous. `source_range` trims the stack.
 pub(all) struct Stack {
   attributes : Attributes
+  source_range : @range.TimeRange?
   children : Array[Track]
 }
 
@@ -100,4 +117,5 @@ pub(all) struct Timeline {
   metadata : Json
   global_start_time : @time.RationalTime?
   tracks : Stack
+  extra : Json
 }

@@ -91,3 +91,35 @@ test "invalid active key is an error" {
   }
   assert_true(@validate.has_errors(@validate.validate(t)))
 }
+
+///|
+fn transition_source() -> String {
+  "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Transition.1\", \"metadata\": {}, \"name\": \"t0\", \"transition_type\": \"SMPTE_Dissolve\", \"in_offset\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 10.0}, \"out_offset\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 10.0}}]}]}}"
+}
+
+///|
+test "preserved transition is informational" {
+  let timeline = @otio.read(transition_source()).unwrap()
+  let issues = @validate.validate(timeline)
+  assert_true(!@validate.has_errors(issues))
+  assert_true(issues.any(fn(i) { i.code == "opaque_transition" }))
+}
+
+///|
+test "preserved unsupported item is an error" {
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"nested\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}]}]}}"
+  let timeline = @otio.read(source).unwrap()
+  let issues = @validate.validate(timeline)
+  assert_true(@validate.has_errors(issues))
+  assert_true(issues.any(fn(i) { i.code == "unsupported_item" }))
+}
+
+///|
+test "trimmed stack is preserved and reported" {
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
+  let timeline = @otio.read(source).unwrap()
+  let issues = @validate.validate(timeline)
+  assert_true(!@validate.has_errors(issues))
+  assert_true(issues.any(fn(i) { i.code == "composition_trimmed" }))
+  assert_true(@timeline.layout(timeline) is Err("composition_trimmed"))
+}

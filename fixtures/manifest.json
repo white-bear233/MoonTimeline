@@ -3,8 +3,8 @@
     "classification": "invalid_json"
   },
   "unsupported/transition.otio": {
-    "classification": "valid_otio_unsupported_by_moontimeline",
-    "reason": "Transition.1"
+    "classification": "valid_otio_preserved",
+    "reason": "Transition.1 is preserved verbatim and treated as zero duration"
   },
   "valid/gap_clip.otio": {
     "classification": "valid",

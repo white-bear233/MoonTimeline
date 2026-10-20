@@ -20,20 +20,52 @@ pub fn source_range(item : @model.Item) -> Result[@range.TimeRange, String] {
   match item {
     @model.Gap(g) => Ok(g.source_range)
     @model.Clip(c) => c.effective_range()
+    @model.Opaque(_) => Err("opaque_item")
+  }
+}
+
+///|
+/// Schema tag of a preserved node. Transitions are zero-duration in OTIO: they
+/// sit at a cut and do not advance the track cursor.
+pub fn opaque_schema(j : Json) -> String {
+  match j {
+    Object(o) =>
+      match o.get("OTIO_SCHEMA") {
+        Some(String(s)) => s
+        _ => ""
+      }
+    _ => ""
   }
 }
 
 ///|
 /// Structural layout includes disabled items. global_start_time is a label, not an offset.
 pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
+  if t.tracks.source_range is Some(_) {
+    return Err("composition_trimmed")
+  }
   let items = []
   let durations = []
   let mut total = 0.0
   for ti = 0; ti < t.tracks.children.length(); ti = ti + 1 {
     let track = t.tracks.children[ti]
+    if track.source_range is Some(_) {
+      return Err("composition_trimmed")
+    }
     let mut cursor = 0.0
     for ii = 0; ii < track.children.length(); ii = ii + 1 {
       let item = track.children[ii]
+      if item is @model.Opaque(raw) {
+        if opaque_schema(raw) == "Transition.1" {
+          continue
+        }
+        return Err(
+          "unsupported_item:/tracks/children/" +
+          ti.to_string() +
+          "/children/" +
+          ii.to_string(),
+        )
+      }
       let source = match source_range(item) {
         Ok(r) => r
         Err(e) =>
@@ -54,6 +86,7 @@ pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
       let enabled = match item {
         @model.Clip(c) => c.attributes.enabled
         @model.Gap(g) => g.attributes.enabled
+        @model.Opaque(_) => false // Skipped above.
       }
       items.push({
         track_index: ti,

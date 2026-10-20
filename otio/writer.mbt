@@ -25,8 +25,21 @@ fn encode_optional_range(r : @range.TimeRange?) -> Json {
 }
 
 ///|
+/// Preserved fields win over defaults: a non-empty markers/effects array read
+/// from upstream must be written back unchanged.
+fn merge_extra(base : Map[String, Json], extra : Json) -> Unit {
+  match extra {
+    Object(m) =>
+      for key, value in m {
+        base[key] = value
+      }
+    _ => ()
+  }
+}
+
+///|
 fn encode_attributes(a : @model.Attributes, tag : String) -> Map[String, Json] {
-  {
+  let o = {
     "OTIO_SCHEMA": Json::string(tag),
     "name": Json::string(a.name),
     "metadata": a.metadata,
@@ -35,29 +48,39 @@ fn encode_attributes(a : @model.Attributes, tag : String) -> Map[String, Json] {
     "effects": Json::array([]),
     "markers": Json::array([]),
   }
+  merge_extra(o, a.extra)
+  o
 }
 
 ///|
 fn encode_media(m : @model.MediaReference) -> Json {
-  let o = {
-    "name": Json::string(m.name),
-    "metadata": m.metadata,
-    "available_range": encode_optional_range(m.available_range),
-    "available_image_bounds": m.available_image_bounds,
-  }
   match m.kind {
-    @model.External(url) => {
-      o["OTIO_SCHEMA"] = Json::string("ExternalReference.1")
-      o["target_url"] = Json::string(url)
+    @model.Opaque(raw) => raw
+    _ => {
+      let o = {
+        "name": Json::string(m.name),
+        "metadata": m.metadata,
+        "available_range": encode_optional_range(m.available_range),
+        "available_image_bounds": m.available_image_bounds,
+      }
+      match m.kind {
+        @model.External(url) => {
+          o["OTIO_SCHEMA"] = Json::string("ExternalReference.1")
+          o["target_url"] = Json::string(url)
+        }
+        @model.Missing => o["OTIO_SCHEMA"] = Json::string("MissingReference.1")
+        @model.Opaque(_) => ()
+      }
+      merge_extra(o, m.extra)
+      Json::object(o)
     }
-    @model.Missing => o["OTIO_SCHEMA"] = Json::string("MissingReference.1")
   }
-  Json::object(o)
 }
 
 ///|
 fn encode_item(item : @model.Item) -> Json {
   match item {
+    @model.Opaque(raw) => raw
     @model.Gap(g) => {
       let o = encode_attributes(g.attributes, "Gap.1")
       o["source_range"] = encode_range(g.source_range)
@@ -89,14 +112,14 @@ fn encode_timeline(t : @model.Timeline) -> Json {
         @model.Audio => "Audio"
       },
     )
-    o["source_range"] = Json::null()
+    o["source_range"] = encode_optional_range(track.source_range)
     o["children"] = Json::array(track.children.map(encode_item))
     Json::object(o)
   })
   let stack = encode_attributes(t.tracks.attributes, "Stack.1")
-  stack["source_range"] = Json::null()
+  stack["source_range"] = encode_optional_range(t.tracks.source_range)
   stack["children"] = Json::array(tracks)
-  Json::object({
+  let root = {
     "OTIO_SCHEMA": Json::string("Timeline.1"),
     "name": Json::string(t.name),
     "metadata": t.metadata,
@@ -105,7 +128,9 @@ fn encode_timeline(t : @model.Timeline) -> Json {
       Some(v) => encode_time(v)
     },
     "tracks": Json::object(stack),
-  })
+  }
+  merge_extra(root, t.extra)
+  Json::object(root)
 }
 
 ///|
@@ -138,10 +163,11 @@ fn check_json(
 }
 
 ///|
-/// Serialize the supported subset; validate public mutable models before returning output.
+/// Serialize the computed subset plus preserved fields; validate public mutable
+/// models before returning output.
 pub fn write(timeline : @model.Timeline) -> Result[String, Diagnostic] {
   let j = encode_timeline(timeline)
-  check_json(j, "", 0, Ref(200000)) catch {
+  check_json(j, "", 0, Ref(2000000)) catch {
     Decode(e) => return Err(e)
   }
   let source = j.stringify()

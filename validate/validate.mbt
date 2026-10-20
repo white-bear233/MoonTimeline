@@ -32,14 +32,49 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
       })
     Ok(_) => ()
   }
+  if t.tracks.source_range is Some(_) {
+    issues.push({
+      code: "composition_trimmed",
+      severity: Info,
+      path: "/tracks/source_range",
+      message: "Stack trimming is preserved but layout is not computed",
+    })
+  }
   for ti = 0; ti < t.tracks.children.length(); ti = ti + 1 {
     let track = t.tracks.children[ti]
+    if track.source_range is Some(_) {
+      issues.push({
+        code: "composition_trimmed",
+        severity: Info,
+        path: "/tracks/children/" + ti.to_string() + "/source_range",
+        message: "Track trimming is preserved but layout is not computed",
+      })
+    }
     for ii = 0; ii < track.children.length(); ii = ii + 1 {
       let path = "/tracks/children/" +
         ti.to_string() +
         "/children/" +
         ii.to_string()
       let item = track.children[ii]
+      if item is @model.Opaque(raw) {
+        let tag = @timeline.opaque_schema(raw)
+        if tag == "Transition.1" {
+          issues.push({
+            code: "opaque_transition",
+            severity: Info,
+            path,
+            message: "Transition preserved verbatim; treated as zero duration",
+          })
+        } else {
+          issues.push({
+            code: "unsupported_item",
+            severity: Error,
+            path,
+            message: "Preserved node is outside the computed subset: " + tag,
+          })
+        }
+        continue
+      }
       match @timeline.source_range(item) {
         Err(_) =>
           issues.push({
@@ -59,6 +94,7 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
           }
       }
       match item {
+        @model.Opaque(_) => () // Reported above and skipped.
         @model.Gap(_) => ()
         @model.Clip(c) =>
           match c.active_media() {
@@ -81,6 +117,13 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
                       message: "External media URL is empty",
                     })
                   }
+                @model.Opaque(_) =>
+                  issues.push({
+                    code: "opaque_media",
+                    severity: Info,
+                    path: path + "/media_references",
+                    message: "Media reference kind is preserved but not interpreted",
+                  })
               }
               match media.available_range {
                 None =>

@@ -6,6 +6,7 @@ fn media() -> @model.MediaReference {
     kind: @model.Missing,
     available_range: None,
     available_image_bounds: Json::null(),
+    extra: Json::empty_object(),
   }
 }
 
@@ -51,19 +52,23 @@ test "source range is independent of media availability" {
     global_start_time: None,
     tracks: {
       attributes: @model.Attributes::new("tracks"),
+      source_range: None,
       children: [
         {
           attributes: @model.Attributes::new("V1"),
           kind: @model.Video,
+          source_range: None,
           children: [@model.Clip(clip)],
         },
         {
           attributes: @model.Attributes::new("A1"),
           kind: @model.Audio,
+          source_range: None,
           children: [],
         },
       ],
     },
+    extra: Json::empty_object(),
   }
   assert_eq(timeline.tracks.children.length(), 2)
   assert_eq(timeline.tracks.children[0].children.length(), 1)

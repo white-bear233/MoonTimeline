@@ -16,6 +16,7 @@ pub(all) struct Attributes {
   metadata : Json
   enabled : Bool
   color : Json
+  extra : Json
 }
 pub fn Attributes::new(String) -> Self
 
@@ -36,11 +37,13 @@ pub(all) struct Gap {
 pub(all) enum Item {
   Clip(Clip)
   Gap(Gap)
+  Opaque(Json)
 }
 
 pub(all) enum MediaKind {
   External(String)
   Missing
+  Opaque(Json)
 }
 
 pub(all) struct MediaReference {
@@ -49,10 +52,12 @@ pub(all) struct MediaReference {
   kind : MediaKind
   available_range : @range.TimeRange?
   available_image_bounds : Json
+  extra : Json
 }
 
 pub(all) struct Stack {
   attributes : Attributes
+  source_range : @range.TimeRange?
   children : Array[Track]
 }
 
@@ -61,11 +66,13 @@ pub(all) struct Timeline {
   metadata : Json
   global_start_time : @time.RationalTime?
   tracks : Stack
+  extra : Json
 }
 
 pub(all) struct Track {
   attributes : Attributes
   kind : TrackKind
+  source_range : @range.TimeRange?
   children : Array[Item]
 }
 

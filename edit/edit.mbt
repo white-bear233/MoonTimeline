@@ -30,6 +30,7 @@ fn with_range(item : @model.Item, range : @range.TimeRange) -> @model.Item {
   match item {
     @model.Clip(c) => @model.Clip({ ..c, source_range: Some(range), })
     @model.Gap(g) => @model.Gap({ ..g, source_range: range, })
+    @model.Opaque(_) => item
   }
 }
 

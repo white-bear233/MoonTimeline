@@ -51,13 +51,9 @@ test "malformed fixture" {
 ///|
 test "transition fixture" {
   let source = "{\n    \"OTIO_SCHEMA\": \"Timeline.1\",\n    \"metadata\": {},\n    \"name\": \"\",\n    \"global_start_time\": null,\n    \"tracks\": {\n        \"OTIO_SCHEMA\": \"Stack.1\",\n        \"metadata\": {},\n        \"name\": \"tracks\",\n        \"source_range\": null,\n        \"effects\": [],\n        \"markers\": [],\n        \"enabled\": true,\n        \"color\": null,\n        \"children\": [\n            {\n                \"OTIO_SCHEMA\": \"Track.1\",\n                \"metadata\": {},\n                \"name\": \"\",\n                \"source_range\": null,\n                \"effects\": [],\n                \"markers\": [],\n                \"enabled\": true,\n                \"color\": null,\n                \"children\": [\n                    {\n                        \"OTIO_SCHEMA\": \"Gap.1\",\n                        \"metadata\": {},\n                        \"name\": \"\",\n                        \"source_range\": {\n                            \"OTIO_SCHEMA\": \"TimeRange.1\",\n                            \"duration\": {\n                                \"OTIO_SCHEMA\": \"RationalTime.1\",\n                                \"rate\": 24.0,\n                                \"value\": 48.0\n                            },\n                            \"start_time\": {\n                                \"OTIO_SCHEMA\": \"RationalTime.1\",\n                                \"rate\": 24.0,\n                                \"value\": 0.0\n                            }\n                        },\n                        \"effects\": [],\n                        \"markers\": [],\n                        \"enabled\": true,\n                        \"color\": null\n                    },\n                    {\n                        \"OTIO_SCHEMA\": \"Transition.1\",\n                        \"metadata\": {},\n                        \"name\": \"\",\n                        \"in_offset\": {\n                            \"OTIO_SCHEMA\": \"RationalTime.1\",\n                            \"rate\": 24.0,\n                            \"value\": 12.0\n                        },\n                        \"out_offset\": {\n                            \"OTIO_SCHEMA\": \"RationalTime.1\",\n                            \"rate\": 24.0,\n                            \"value\": 12.0\n                        },\n                        \"transition_type\": \"\"\n                    },\n                    {\n                        \"OTIO_SCHEMA\": \"Gap.1\",\n                        \"metadata\": {},\n                        \"name\": \"\",\n                        \"source_range\": {\n                            \"OTIO_SCHEMA\": \"TimeRange.1\",\n                            \"duration\": {\n                                \"OTIO_SCHEMA\": \"RationalTime.1\",\n                                \"rate\": 24.0,\n                                \"value\": 48.0\n                            },\n                            \"start_time\": {\n                                \"OTIO_SCHEMA\": \"RationalTime.1\",\n                                \"rate\": 24.0,\n                                \"value\": 0.0\n                            }\n                        },\n                        \"effects\": [],\n                        \"markers\": [],\n                        \"enabled\": true,\n                        \"color\": null\n                    }\n                ],\n                \"kind\": \"Video\"\n            }\n        ]\n    }\n}\n"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "unsupported_schema")
-      assert_eq(error.path, "/tracks/children/0/children/1/OTIO_SCHEMA")
-    }
-  }
+  let timeline = @otio.read(source).unwrap()
+  assert_true(timeline.tracks.children[0].children[1] is @model.Opaque(_))
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
@@ -99,37 +95,23 @@ test "unknown track kind" {
 ///|
 test "effect" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [{\"OTIO_SCHEMA\": \"Effect.1\"}], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "unsupported_feature")
-      assert_eq(error.path, "/tracks/children/0/effects")
-    }
-  }
+  let timeline = @otio.read(source).unwrap()
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
 test "markers" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [{}], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "unsupported_feature")
-      assert_eq(error.path, "/tracks/markers")
-    }
-  }
+  let timeline = @otio.read(source).unwrap()
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
 test "composition range" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "unsupported_feature")
-      assert_eq(error.path, "/tracks/source_range")
-    }
-  }
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
+  let timeline = @otio.read(source).unwrap()
+  assert_true(timeline.tracks.source_range is Some(_))
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
@@ -213,25 +195,16 @@ test "children type" {
 ///|
 test "unknown field" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}, \"unexpected\": 1}"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "unsupported_field")
-      assert_eq(error.path, "/unexpected")
-    }
-  }
+  let timeline = @otio.read(source).unwrap()
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
 test "null name" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": null, \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
-  match @otio.read(source) {
-    Ok(_) => fail("Expected reader rejection")
-    Err(error) => {
-      assert_eq(error.code, "type")
-      assert_eq(error.path, "/name")
-    }
-  }
+  let timeline = @otio.read(source).unwrap()
+  assert_eq(timeline.name, "")
+  assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
 }
 
 ///|
@@ -312,15 +285,51 @@ test "missing media and unknown duration remain explicit" {
 
 ///|
 test "escaped JSON pointer" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"a/b~c\": {\"OTIO_SCHEMA\": \"Unknown.1\"}}, \"active_media_reference_key\": \"a/b~c\"}], \"kind\": \"Video\"}]}}"
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"a/b~c\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"target_url\": 5}}, \"active_media_reference_key\": \"a/b~c\"}], \"kind\": \"Video\"}]}}"
   match @otio.read(source) {
     Ok(_) => fail("Expected reader rejection")
     Err(error) => {
-      assert_eq(error.code, "unsupported_schema")
+      assert_eq(error.code, "type")
       assert_eq(
         error.path,
-        "/tracks/children/0/children/1/media_references/a~1b~0c/OTIO_SCHEMA",
+        "/tracks/children/0/children/1/media_references/a~1b~0c/target_url",
       )
     }
   }
+}
+
+///|
+test "legacy Clip.1 and Sequence.1 are upgraded on write" {
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"legacy\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Sequence.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Clip.1\", \"metadata\": {}, \"name\": \"c\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_reference\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": null, \"available_range\": null, \"available_image_bounds\": null, \"target_url\": \"legacy.mov\"}}]}]}}"
+  let timeline = @otio.read(source).unwrap()
+  match timeline.tracks.children[0].children[0] {
+    @model.Clip(c) => {
+      assert_true(
+        c.media_references["DEFAULT_MEDIA"].kind
+        is @model.External("legacy.mov"),
+      )
+      assert_true(c.source_range is Some(_))
+    }
+    _ => fail("Expected clip")
+  }
+  let out = @otio.write(timeline).unwrap()
+  assert_true(out.contains("Clip.2"))
+  assert_true(out.contains("Track.1"))
+  assert_true(@otio.read(out) is Ok(_))
+}
+
+///|
+test "nonfinite metadata literals are coerced, strings are untouched" {
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {\"a\": Inf, \"b\": -Infinity, \"c\": NaN, \"s\": \"Inf\"}, \"name\": \"n\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
+  let timeline = @otio.read(source).unwrap()
+  match timeline.metadata {
+    Object(m) => {
+      assert_true(m["a"] is Null)
+      assert_true(m["b"] is Null)
+      assert_true(m["c"] is Null)
+      assert_true(m["s"] is String("Inf"))
+    }
+    _ => fail("Expected metadata object")
+  }
+  assert_true(@otio.write(timeline) is Ok(_))
 }

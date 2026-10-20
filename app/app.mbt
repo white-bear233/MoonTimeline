@@ -66,6 +66,7 @@ fn describe(t : @model.Timeline) -> Json {
           let (name, kind) = match item {
             @model.Clip(c) => (c.attributes.name, "clip")
             @model.Gap(g) => (g.attributes.name, "gap")
+            @model.Opaque(raw) => (@timeline.opaque_schema(raw), "opaque")
           }
           Json::object({
             "track": Json::number(p.track_index.to_double()),
