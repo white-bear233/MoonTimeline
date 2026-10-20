@@ -1,0 +1,15 @@
+{
+  "invalid/malformed.otio": {
+    "classification": "invalid_json"
+  },
+  "unsupported/transition.otio": {
+    "classification": "valid_otio_unsupported_by_moontimeline",
+    "reason": "Transition.1"
+  },
+  "valid/gap_clip.otio": {
+    "classification": "valid",
+    "clip_start_seconds": 2,
+    "duration_seconds": 7,
+    "source_start_seconds": 10
+  }
+}
