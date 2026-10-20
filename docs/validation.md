@@ -61,3 +61,32 @@ Python 3.11 + OpenTimelineIO 0.18.1。版本安装地址已确认可访问。
 - 发布前重新查重：扫描本地 registry 索引的 3180 个模块，名称含 otio/timeline/video/clip/media 的条目中除本包外无 OTIO 或剪辑时间线库；相近方向的边界见 `compatibility.md`。
 - 提交 `a51e97a` 的远程 CI：oracle、moonbit (js)、moonbit (native)、moonbit (wasm-gc) 四项全部通过。
 - Windows 本机 Native 仍未运行（缺 MSVC C++ Build Tools），Linux Native 由 CI 覆盖；这一点不因发布而改变。
+
+# 0.1.1 兼容与规模验证（2026-10-21）
+
+针对「只认自己生成的样例」这一缺口，读取策略从「超范围即整体拒绝」改为「保留 + 分档」。
+
+- 旧 schema：Clip.1（单数 `media_reference`）与 Sequence.1 读入后按当前语义处理，写回升级为 Clip.2 / Track.1。
+- 未知字段与未知条目：进入 `extra` 原样保留；Transition.1 按零时长参与布局；其它未知条目保留但拒绝计算。
+- 非有限字面量：`Inf` / `-Infinity` / `NaN`（Python json 默认输出）降级为 null 后继续读取，字符串内容不受影响。
+- 上限：输入 16 M UTF-16 单元；写出校验节点预算 2,000,000。
+
+本地结果（Windows x64，moon 0.1.20261016）：
+
+| 项目 | 结果 |
+|---|---|
+| MoonBit 测试（JS / Wasm GC） | 170 项通过（新增 6 项兼容与降级用例） |
+| 上游 sample_data 可读 | **13 / 13** |
+| 上游 sample_data 可计算 | **9 / 13**（4 个为修剪或嵌套 Stack，原因明确） |
+| 上游 sample_data 可写回 / 写回后布局一致 | **13 / 13** / **13 / 13** |
+
+规模基准（`node tools/bench.mjs`，10 轨合成时间线，墙钟时间含文件 IO、扣除进程启动约 188 ms）：
+
+| 片段数 | 输入大小 | inspect | validate | export |
+|---|---|---|---|---|
+| 1,000 | 0.5 MB | < 1 ms | 30 ms | 58 ms |
+| 5,000 | 2.5 MB | 224 ms | 311 ms | 402 ms |
+| 10,000 | 5.0 MB | 476 ms | 717 ms | 917 ms |
+| 20,000 | 10.0 MB | 1,075 ms | 1,573 ms | 1,892 ms |
+
+复现：`node tools/check_external_corpus.mjs`、`node tools/bench.mjs`。

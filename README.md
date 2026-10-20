@@ -6,14 +6,15 @@
 
 ## 能力
 
-- **严格读取**：受限 OTIO JSON 子集，错误带字段路径；遇到转场、效果、复杂嵌套等超范围语义显式拒绝，不静默丢数据。
+- **兼容真实工程**：官方 OTIO 样例可读 13/13、可写回 13/13；旧格式（`Clip.1`、`Sequence.1`）读入后自动升级，未知字段与条目不丢。
+- **分档而非硬拒**：转场按零时长计算；修剪、嵌套等无法确定语义的输入保留原文、拒绝计算并给出原因，不静默按全长处理。
 - **语义导出**：导出的工程由官方 OTIO 0.18.1 读取验证，往返后 JSON 完整一致。
 - **时间与区间**：`RationalTime`（value/rate 双精度）、帧率转换不偷偷取整、舍入策略由调用者选择；半开区间、交集、裁剪。
 - **布局与查询**：轨道累计位置、工程总时长（取最长轨道）、时间点查询、素材位置映射。
 - **诊断**：区分确定错误、警告与信息不足，素材可用范围缺失只提示无法验证，不误报越界。
 - **原子编辑**：拆分、顺移裁剪、插入 Gap；成功返回独立工程，失败时原工程保持不变。
 
-当前 164 项 MoonBit 测试在 JS 与 Wasm GC 上通过，Native 由 Linux CI 覆盖。
+当前 170 项 MoonBit 测试在 JS 与 Wasm GC 上通过，Native 由 Linux CI 覆盖；输入上限 16 MB（约 3 万片段），2 万片段（10 MB）约 1 秒完成解析与布局。
 
 ## 安装
 
@@ -78,11 +79,19 @@ node tools/serve.mjs   # http://127.0.0.1:4173/demo/index.html
 ## 兼容边界
 
 - 参考上游固定为 v0.18.1（commit `44236713c1db295a6ffc66189ae98dbdfd0cb9c4`，Apache-2.0）。
-- 支持 `RationalTime.1`、`TimeRange.1`、`Timeline.1`、`Stack.1`、`Track.1`、`Clip.2`、`Gap.1`、`ExternalReference.1`、`MissingReference.1` 的受限子集。
-- 不支持转场、变速效果与复杂嵌套；遇到即报错，不做有损转换。
-- 样例由 `tools/oracle.py` 原创构造，媒体路径均为占位符，不含真实视频。
+- 支持 `RationalTime.1`、`TimeRange.1`、`Timeline.1`、`Stack.1`、`Track.1`、`Sequence.1`、`Clip.1`、`Clip.2`、`Gap.1`、`ExternalReference.1`、`MissingReference.1`。
+- 转场（`Transition.1`）保留并按零时长参与布局；效果、标记、未知字段原样保留但不参与计算。
+- 修剪过的轨道、嵌套 Stack 等无法确定语义的输入：保留原文，布局报 `composition_trimmed` / `unsupported_item`，不猜测。
+- 媒体边界未知时只给提示，不误判越界；样例由 `tools/oracle.py` 原创构造，媒体路径均为占位符。
 
-详见 [兼容说明](docs/compatibility.md) 与 [读取限制](docs/reader.md)。
+完整的三档能力表（解析 / 计算 / 编辑）与降级行为见 [兼容说明](docs/compatibility.md)。
+
+## 外部语料与规模
+
+```sh
+node tools/check_external_corpus.mjs   # 上游 sample_data：可读 13/13，可计算 9/13
+node tools/bench.mjs                   # 1k / 5k / 10k / 20k 片段的解析、校验、导出耗时
+```
 
 ## 开发与验证
 
