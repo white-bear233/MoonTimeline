@@ -5,3 +5,7 @@ target/
 __pycache__/
 *.pyc
 .DS_Store
+
+dist/
+.mooncakes/
+node_modules/

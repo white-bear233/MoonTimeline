@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/app"
+
+// Values
+pub fn config_json(Config) -> String
+
+pub fn parse_args(Array[String]) -> Result[Config, String]
+
+pub fn response_json(Response) -> String
+
+pub fn run(String, String, Int32, Int32, Double, Double, Double) -> Response
+
+// Errors
+
+// Types and methods
+pub(all) struct Config {
+  action : String
+  input : String
+  output : String?
+  track : Int32
+  item : Int32
+  at : Double
+  duration : Double
+  rate : Double
+}
+
+pub(all) struct Response {
+  code : Int32
+  body : String
+  output : String?
+}
+
+// Type aliases
+
+// Traits

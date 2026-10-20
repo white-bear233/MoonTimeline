@@ -45,3 +45,9 @@ jobs:
       - run: python -m pip install -r tools/requirements.txt
       - run: python tools/check_roundtrip.py --target ${{ matrix.target }}
       - run: python tools/check_edits.py --target ${{ matrix.target }}
+      - if: matrix.target == 'js'
+        run: |
+          node tools/build-js.mjs
+          node --test tests/cli.test.mjs
+      - if: matrix.target == 'native'
+        run: MOONTIMELINE_NATIVE="$PWD/_build/native/debug/build/cmd/native/native.exe" node --test tests/cli.test.mjs

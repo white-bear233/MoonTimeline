@@ -1,0 +1,1 @@
+{"name":"moontimeline","version":"0.1.0","private":true,"type":"module","scripts":{"build":"node tools/build-js.mjs","test:cli":"node --test tests/cli.test.mjs","demo":"node tools/serve.mjs"},"bin":{"moontimeline":"./cmd/moontimeline.mjs"}}

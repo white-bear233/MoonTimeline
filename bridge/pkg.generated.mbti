@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/bridge"
+
+// Values
+pub fn parse(Array[String]) -> String
+
+pub fn run(String, String, Int32, Int32, Double, Double, Double) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

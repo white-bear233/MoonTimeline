@@ -1,0 +1,11 @@
+import {
+  "white-bear233/moontimeline/app",
+}
+
+pkgtype(kind: "foreign_library")
+
+options(
+  link: { "js": { "exports": [ "run", "parse" ], "format": "esm" } },
+)
+
+supported_targets = "js"
