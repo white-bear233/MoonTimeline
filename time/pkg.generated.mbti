@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/time"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct RationalTime {
+  // private fields
+} derive(@debug.Debug)
+pub fn RationalTime::new(Double, Double) -> Result[Self, TimeError]
+pub fn RationalTime::rate(Self) -> Double
+pub fn RationalTime::rescaled_to(Self, Double) -> Result[Self, TimeError]
+pub fn RationalTime::rounded_frames(Self, Double, Rounding) -> Result[Double, TimeError]
+pub fn RationalTime::to_repr(Self) -> @debug.Repr
+pub fn RationalTime::to_seconds(Self) -> Result[Double, TimeError]
+pub fn RationalTime::value(Self) -> Double
+
+pub(all) enum Rounding {
+  Floor
+  Ceil
+  TowardZero
+  NearestAway
+} derive(Eq, @debug.Debug)
+pub fn Rounding::equal(Self, Self) -> Bool
+pub fn Rounding::not_equal(Self, Self) -> Bool
+pub fn Rounding::to_repr(Self) -> @debug.Repr
+
+pub(all) enum TimeError {
+  InvalidValue
+  InvalidRate
+  NumericOverflow
+  UnsafeInteger
+} derive(Eq, @debug.Debug)
+pub fn TimeError::equal(Self, Self) -> Bool
+pub fn TimeError::not_equal(Self, Self) -> Bool
+pub fn TimeError::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

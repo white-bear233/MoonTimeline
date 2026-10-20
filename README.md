@@ -29,6 +29,17 @@ CI 在 Linux 上验证 JS 和 Native；Windows 本地环境另行记录验证结
 每个里程碑通过检查后单独提交，不通过空提交凑数量。
 当前尚未提供工程导入、编辑、CLI 或浏览器演示。
 
+已完成前 3 个里程碑：工程初始化、OTIO 0.18.1 对照样例、时间计算模块。
+时间模块用法与边界见 [时间 API](docs/time.md)，上游范围见 [兼容说明](docs/compatibility.md)。
+
+```sh
+moon run examples/time --target js
+python tools/generate_time_tests.py --check
+```
+
+Python 对照验证请先安装 `tools/requirements.txt`，再运行 `python tools/oracle.py --check`。
+产品库本身不需要 Python。
+
 ## 许可证与参考
 
 Apache-2.0，见 [LICENSE](LICENSE)。

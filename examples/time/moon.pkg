@@ -1,0 +1,5 @@
+import {
+  "white-bear233/moontimeline/time" @timeline_time,
+}
+
+pkgtype(kind: "executable")

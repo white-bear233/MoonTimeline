@@ -12,11 +12,12 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r tools/requirements.txt
       - run: python tools/oracle.py --check
+      - run: python tools/generate_time_tests.py --check
   moonbit:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [js, native]
+        target: [js, native, wasm-gc]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,3 +33,4 @@ jobs:
       - run: moon check --target ${{ matrix.target }}
       - run: moon build --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }}
+      - run: moon run examples/time --target ${{ matrix.target }}
