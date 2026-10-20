@@ -1,0 +1,7 @@
+_build/
+target/
+.moon/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
