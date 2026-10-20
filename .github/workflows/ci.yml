@@ -49,5 +49,7 @@ jobs:
         run: |
           node tools/build-js.mjs
           node --test tests/cli.test.mjs
+          node --check demo/app.mjs
+          node --check tools/serve.mjs
       - if: matrix.target == 'native'
         run: MOONTIMELINE_NATIVE="$PWD/_build/native/debug/build/cmd/native/native.exe" node --test tests/cli.test.mjs
