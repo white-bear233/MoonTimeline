@@ -1,0 +1,7 @@
+import {
+  "white-bear233/moontimeline/edit" @editing,
+  "white-bear233/moontimeline/otio",
+  "white-bear233/moontimeline/time",
+}
+
+pkgtype(kind: "executable")

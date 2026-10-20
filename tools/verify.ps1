@@ -18,6 +18,10 @@ try {
   CheckExit
   python tools/generate_time_tests.py --check
   CheckExit
+  .venv/Scripts/python.exe tools/check_roundtrip.py
+  CheckExit
+  .venv/Scripts/python.exe tools/check_edits.py
+  CheckExit
   git diff --check
   CheckExit
 } finally { Pop-Location }

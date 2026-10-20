@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/edit"
+
+import {
+  "white-bear233/moontimeline/model",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn insert_gap(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@model.Timeline, String]
+
+pub fn split(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@model.Timeline, String]
+
+pub fn trim(@model.Timeline, Int32, Int32, @time.RationalTime, @time.RationalTime) -> Result[@model.Timeline, String]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -26,4 +26,4 @@ unsupported_field、unsupported_feature、invalid_time、invalid_range、missing
 测试直接来自已提交的官方 OTIO 样例，使用 Python 生成可在 JS/Native/Wasm GC 执行的 MoonBit 黑盒测试。
 `python tools/generate_reader_tests.py` 后执行 `moon fmt` 可重新生成；CI 检查生成文件无差异。
 已有正常路径测试检查素材起点 10 秒与 Gap 时长 2 秒，避免将 source 与 placement 混用。
-此阶段不提供序列化、布局总时长或编辑，分别属于第 7、8、10 步。
+序列化、布局和编辑已分别在第 7、8、10 步实现，详见 writer.md、layout.md、edit.md。
