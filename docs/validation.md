@@ -45,4 +45,19 @@ Python 3.11 + OpenTimelineIO 0.18.1。版本安装地址已确认可访问。
 - 第 10 步：161 项测试，覆盖拆分、裁剪、Gap 插入、失败原子性、容器独立性和顺移布局。
 - 本地 JS / Wasm GC 检查、构建、测试通过；官方 OTIO 接受三种编辑后的真实导出，素材连续性与时长正确。
 - CI 矩阵对 JS / Native / Wasm GC 执行官方往返及编辑输出验证。远程状态以对应提交的 Actions 记录为准。
-- 仍未交付命令行工具、网页演示和 Mooncakes 发布；这些属于第 11～14 步。
+
+# 第 11～13 步验证记录
+
+- 第 11 步 CLI：Node 入口 `cmd/moontimeline.mjs` 使用真实临时文件测试，覆盖 inspect/validate/export/split/trim/gap、退出码 0/1/2、覆盖保护与 16 MB 输入上限；原生入口由 Linux CI 构建运行，Windows 本机缺 MSVC 未验证。
+- 第 12 步演示：`demo/` 人工浏览器验证「载入示例 → 拆分（2 个片段变 3 个，总长仍 7 秒）→ 下载 → 官方 OTIO 读取 → 撤销」；界面截图见 `docs/assets/demo.png`。
+- 第 13 步回归：120 个确定性拆分点、12 个由官方 OTIO 生成的双轨道工程、非法 UTF-8、循环元数据、输入大小限制；JS 与 Wasm GC 结果一致。
+- 本地 2026-10-20 结果：`moon test --target js` 与 `--target wasm-gc` 各 **164 项通过**；`node --test tests/cli.test.mjs tests/regression.test.mjs` 6 项通过；`moon fmt --check`、`moon check --target js` 通过。
+
+# 第 14 步发布验证记录
+
+- 发布日：2026-10-21（Asia/Shanghai），版本 `0.1.0`，Mooncakes 包页 <https://mooncakes.io/docs/white-bear233/moontimeline>。
+- `moon publish` 发布前自检链：`moon check` 通过 → 打包 `_build/publish/white-bear233-moontimeline-0.1.0.zip` → 解压到临时目录后再次 `moon check` 通过 → 上传返回 200。
+- 独立安装验证：在 `%TEMP%` 下新建空模块 `verify/moontimeline_check`，执行 `moon add white-bear233/moontimeline`（解析到 0.1.0），运行 README 示例，输出 `48 frames @ 24fps = 2 s`、`At 30fps: 60 frames`，并用 `@otio.read` 读取 `Timeline.1` 样例、`@otio.write` 往返成功。
+- 发布前重新查重：扫描本地 registry 索引的 3180 个模块，名称含 otio/timeline/video/clip/media 的条目中除本包外无 OTIO 或剪辑时间线库；相近方向的边界见 `compatibility.md`。
+- 提交 `a51e97a` 的远程 CI：oracle、moonbit (js)、moonbit (native)、moonbit (wasm-gc) 四项全部通过。
+- Windows 本机 Native 仍未运行（缺 MSVC C++ Build Tools），Linux Native 由 CI 覆盖；这一点不因发布而改变。
