@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/otio"
+
+import {
+  "moonbitlang/core/debug",
+  "white-bear233/moontimeline/model",
+}
+
+// Values
+pub fn read(String) -> Result[@model.Timeline, Diagnostic]
+
+// Errors
+
+// Types and methods
+pub(all) struct Diagnostic {
+  code : String
+  path : String
+  message : String
+} derive(@debug.Debug)
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

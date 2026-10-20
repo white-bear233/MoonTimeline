@@ -30,6 +30,11 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
       - run: moon fmt --check
+      - name: Verify reader fixtures are reproducible
+        run: |
+          python3 tools/generate_reader_tests.py
+          moon fmt otio
+          git diff --exit-code -- otio/fixtures_test.mbt
       - run: moon check --target ${{ matrix.target }}
       - run: moon build --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }}
