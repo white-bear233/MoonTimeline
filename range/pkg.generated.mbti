@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/range"
+
+import {
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct TimeRange {
+  // private fields
+}
+pub fn TimeRange::contains(Self, @time.RationalTime) -> Result[Bool, String]
+pub fn TimeRange::duration(Self) -> @time.RationalTime
+pub fn TimeRange::end_seconds(Self) -> Double
+pub fn TimeRange::intersection(Self, Self) -> Result[Self?, String]
+pub fn TimeRange::new(@time.RationalTime, @time.RationalTime) -> Result[Self, String]
+pub fn TimeRange::start(Self) -> @time.RationalTime
+pub fn TimeRange::trimmed_to(Self, Self) -> Result[Self?, String]
+
+// Type aliases
+
+// Traits
