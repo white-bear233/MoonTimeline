@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/timeline"
+
+import {
+  "white-bear233/moontimeline/model",
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn layout(@model.Timeline) -> Result[Layout, String]
+
+pub fn source_range(@model.Item) -> Result[@range.TimeRange, String]
+
+// Errors
+
+// Types and methods
+pub(all) struct Layout {
+  items : Array[Placement]
+  track_durations : Array[Double]
+  duration_seconds : Double
+}
+pub fn Layout::items_at(Self, Double) -> Result[Array[Placement], String]
+
+pub(all) struct Placement {
+  track_index : Int32
+  item_index : Int32
+  start_seconds : Double
+  end_seconds : Double
+  source : @range.TimeRange
+  enabled : Bool
+}
+pub fn Placement::source_at(Self, Double) -> Result[@time.RationalTime, String]
+
+// Type aliases
+
+// Traits
