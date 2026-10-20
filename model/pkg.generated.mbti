@@ -1,0 +1,79 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/model"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct Attributes {
+  name : String
+  metadata : Json
+  enabled : Bool
+  color : Json
+}
+pub fn Attributes::new(String) -> Self
+
+pub(all) struct Clip {
+  attributes : Attributes
+  source_range : @range.TimeRange?
+  media_references : Map[String, MediaReference]
+  active_media_reference_key : String
+}
+pub fn Clip::active_media(Self) -> Result[MediaReference, String]
+pub fn Clip::effective_range(Self) -> Result[@range.TimeRange, String]
+
+pub(all) struct Gap {
+  attributes : Attributes
+  source_range : @range.TimeRange
+}
+
+pub(all) enum Item {
+  Clip(Clip)
+  Gap(Gap)
+}
+
+pub(all) enum MediaKind {
+  External(String)
+  Missing
+}
+
+pub(all) struct MediaReference {
+  name : String
+  metadata : Json
+  kind : MediaKind
+  available_range : @range.TimeRange?
+  available_image_bounds : Json
+}
+
+pub(all) struct Stack {
+  attributes : Attributes
+  children : Array[Track]
+}
+
+pub(all) struct Timeline {
+  name : String
+  metadata : Json
+  global_start_time : @time.RationalTime?
+  tracks : Stack
+}
+
+pub(all) struct Track {
+  attributes : Attributes
+  kind : TrackKind
+  children : Array[Item]
+}
+
+pub(all) enum TrackKind {
+  Video
+  Audio
+}
+
+// Type aliases
+
+// Traits
