@@ -51,6 +51,9 @@ jobs:
           node --test tests/cli.test.mjs tests/regression.test.mjs
           node --check demo/app.mjs
           node --check tools/serve.mjs
+      - if: matrix.target == 'js'
+        name: Upstream OTIO sample corpus
+        run: node tools/check_external_corpus.mjs
       - if: matrix.target == 'native'
         run: MOONTIMELINE_NATIVE="$PWD/_build/native/debug/build/cmd/native/native.exe" node --test tests/cli.test.mjs
       - if: matrix.target == 'native'
