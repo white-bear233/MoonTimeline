@@ -39,3 +39,8 @@ jobs:
       - run: moon build --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }}
       - run: moon run examples/time --target ${{ matrix.target }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r tools/requirements.txt
+      - run: python tools/check_roundtrip.py --target ${{ matrix.target }}

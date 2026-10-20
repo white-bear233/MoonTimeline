@@ -1,0 +1,5 @@
+import {
+  "white-bear233/moontimeline/otio",
+}
+
+pkgtype(kind: "executable")
