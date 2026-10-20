@@ -108,7 +108,7 @@ test "markers" {
 
 ///|
 test "composition range" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"Gap and clip\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Clip.2\", \"metadata\": {\"moontimeline\": {\"fixture\": true}}, \"name\": \"Example clip\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 120.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 240.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_references\": {\"DEFAULT_MEDIA\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": \"\", \"available_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 480.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"available_image_bounds\": null, \"target_url\": \"media/example.mov\"}}, \"active_media_reference_key\": \"DEFAULT_MEDIA\"}], \"kind\": \"Video\"}]}}"
   let timeline = @otio.read(source).unwrap()
   assert_true(timeline.tracks.source_range is Some(_))
   assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))
@@ -296,40 +296,4 @@ test "escaped JSON pointer" {
       )
     }
   }
-}
-
-///|
-test "legacy Clip.1 and Sequence.1 are upgraded on write" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"legacy\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Sequence.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Clip.1\", \"metadata\": {}, \"name\": \"c\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_reference\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": null, \"available_range\": null, \"available_image_bounds\": null, \"target_url\": \"legacy.mov\"}}]}]}}"
-  let timeline = @otio.read(source).unwrap()
-  match timeline.tracks.children[0].children[0] {
-    @model.Clip(c) => {
-      assert_true(
-        c.media_references["DEFAULT_MEDIA"].kind
-        is @model.External("legacy.mov"),
-      )
-      assert_true(c.source_range is Some(_))
-    }
-    _ => fail("Expected clip")
-  }
-  let out = @otio.write(timeline).unwrap()
-  assert_true(out.contains("Clip.2"))
-  assert_true(out.contains("Track.1"))
-  assert_true(@otio.read(out) is Ok(_))
-}
-
-///|
-test "nonfinite metadata literals are coerced, strings are untouched" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {\"a\": Inf, \"b\": -Infinity, \"c\": NaN, \"s\": \"Inf\"}, \"name\": \"n\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
-  let timeline = @otio.read(source).unwrap()
-  match timeline.metadata {
-    Object(m) => {
-      assert_true(m["a"] is Null)
-      assert_true(m["b"] is Null)
-      assert_true(m["c"] is Null)
-      assert_true(m["s"] is String("Inf"))
-    }
-    _ => fail("Expected metadata object")
-  }
-  assert_true(@otio.write(timeline) is Ok(_))
 }

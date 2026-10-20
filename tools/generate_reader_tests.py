@@ -16,6 +16,12 @@ def emit(name, source, assertions):
 def good(name, obj, assertions):
     emit(name, json.dumps(obj), ['let timeline = @otio.read(source).unwrap()'] + assertions)
 
+def good_roundtrip(name, source, assertions):
+    # Preservation cases: readable, listed assertions hold, and the document
+    # survives a write/read cycle unchanged.
+    emit(name, source, ['let timeline = @otio.read(source).unwrap()'] + assertions + [
+        'assert_eq(@json.parse(@otio.write(timeline).unwrap()), @json.parse(source))'])
+
 def bad(name, source, code, path):
     emit(name, source, ['match @otio.read(source) {',
         '  Ok(_) => fail("Expected reader rejection")', '  Err(error) => {',
@@ -39,23 +45,24 @@ good('official OTIO fixture preserves source coordinates and metadata', base, [
     '  }', '  _ => fail("Expected clip")', '}'])
 
 bad('malformed fixture', (ROOT/'fixtures/invalid/malformed.otio').read_text(), 'invalid_json', '')
-bad('transition fixture', (ROOT/'fixtures/unsupported/transition.otio').read_text(), 'unsupported_schema', '/tracks/children/0/children/1/OTIO_SCHEMA')
+good_roundtrip('transition fixture', (ROOT/'fixtures/unsupported/transition.otio').read_text(), [
+    'assert_true(timeline.tracks.children[0].children[1] is @model.Opaque(_))'])
 
 mutations = [
  ('future schema', ['OTIO_SCHEMA'], 'Timeline.99', 'unsupported_schema'),
  ('nested stack', ['tracks','children',0,'OTIO_SCHEMA'], 'Stack.1', 'unsupported_schema'),
  ('unknown track kind', ['tracks','children',0,'kind'], 'Other', 'unsupported_feature'),
- ('effect', ['tracks','children',0,'effects'], [{'OTIO_SCHEMA':'Effect.1'}], 'unsupported_feature'),
- ('markers', ['tracks','markers'], [{}], 'unsupported_feature'),
- ('composition range', ['tracks','source_range'], {}, 'unsupported_feature'),
+ ('effect', ['tracks','children',0,'effects'], [{'OTIO_SCHEMA':'Effect.1'}], None),
+ ('markers', ['tracks','markers'], [{}], None),
+ ('composition range', ['tracks','source_range'], base['tracks']['children'][0]['children'][1]['source_range'], None),
  ('zero rate', ['tracks','children',0,'children',1,'source_range','duration','rate'], 0, 'invalid_time'),
  ('negative duration', ['tracks','children',0,'children',1,'source_range','duration','value'], -1, 'invalid_range'),
  ('bad active key', ['tracks','children',0,'children',1,'active_media_reference_key'], 'missing', 'missing_media'),
  ('metadata type', ['metadata'], [], 'type'),
  ('enabled type', ['tracks','enabled'], 'yes', 'type'),
  ('children type', ['tracks','children'], {}, 'type'),
- ('unknown field', ['unexpected'], 1, 'unsupported_field'),
- ('null name', ['name'], None, 'type'),
+ ('unknown field', ['unexpected'], 1, None),
+ ('null name', ['name'], None, None),
  ('bad rate type', ['tracks','children',0,'children',0,'source_range','duration','rate'], '24', 'type'),
 ]
 for name, path, value, code in mutations:
@@ -63,6 +70,14 @@ for name, path, value, code in mutations:
     parent = obj
     for key in path[:-1]: parent = parent[key]
     parent[path[-1]] = value
+    if code is None:
+        assertions = []
+        if name == 'composition range':
+            assertions = ['assert_true(timeline.tracks.source_range is Some(_))']
+        if name == 'null name':
+            assertions = ['assert_eq(timeline.name, "")']
+        good_roundtrip(name, json.dumps(obj), assertions)
+        continue
     reported = path[:-2] if name == 'negative duration' else path
     bad(name, json.dumps(obj), code, '/'+'/'.join(map(str,reported)))
 obj = copy.deepcopy(base); del obj['tracks']
@@ -85,7 +100,7 @@ good('missing media and unknown duration remain explicit',obj,[
  '  _ => fail("Expected clip")', '}'])
 obj = copy.deepcopy(base)
 clip = obj['tracks']['children'][0]['children'][1]
-clip['media_references'] = {'a/b~c':{'OTIO_SCHEMA':'Unknown.1'}}
+clip['media_references'] = {'a/b~c':{'OTIO_SCHEMA':'ExternalReference.1','target_url':5}}
 clip['active_media_reference_key'] = 'a/b~c'
-bad('escaped JSON pointer',json.dumps(obj),'unsupported_schema','/tracks/children/0/children/1/media_references/a~1b~0c/OTIO_SCHEMA')
+bad('escaped JSON pointer',json.dumps(obj),'type','/tracks/children/0/children/1/media_references/a~1b~0c/target_url')
 (ROOT/'otio/fixtures_test.mbt').write_text('\n'.join(lines)+'\n',encoding='utf-8',newline='\n')

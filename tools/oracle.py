@@ -70,8 +70,8 @@ def artifacts():
             "valid/gap_clip.otio": {"classification": "valid", "duration_seconds": 7,
                                     "clip_start_seconds": 2, "source_start_seconds": 10},
             "invalid/malformed.otio": {"classification": "invalid_json"},
-            "unsupported/transition.otio": {"classification": "valid_otio_unsupported_by_moontimeline",
-                                           "reason": "Transition.1"},
+            "unsupported/transition.otio": {"classification": "valid_otio_preserved",
+                                           "reason": "Transition.1 is preserved verbatim and treated as zero duration"},
         }),
     }
 
