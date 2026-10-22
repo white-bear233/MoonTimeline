@@ -29,3 +29,18 @@ test('preserved transition stays readable',()=>{
  const body=JSON.parse(r.stdout);assert.equal(body.duration,4);
  assert.ok(body.issues.some(i=>i.code==='opaque_transition'));
 });
+
+test('path addressing edits items and tracks',()=>{
+ const d=mkdtempSync(join(tmpdir(),'moontimeline-path-'));
+ try{
+  const trimmed=join(d,'trim.otio');
+  let r=cli('trim',fixture,'--path','/tracks/children/0/children/1','--at-frame','24','--duration-frames','48','--rate','24','--output',trimmed);
+  assert.equal(r.status,0,r.stderr||r.stdout);
+  assert.equal(JSON.parse(readFileSync(trimmed)).tracks.children[0].children.length,2);
+  const trackTrim=join(d,'track.otio');
+  r=cli('trim',fixture,'--path','/tracks/children/0','--at-frame','24','--duration-frames','72','--rate','24','--output',trackTrim);
+  assert.equal(r.status,0,r.stderr||r.stdout);
+  const played=cli('inspect',trackTrim);
+  assert.equal(JSON.parse(played.stdout).duration,3);
+ }finally{rmSync(d,{recursive:true,force:true});}
+});

@@ -7,7 +7,7 @@ try {
  const c=JSON.parse(parse(args)); if(c.error) throw new Error(c.error);
  if((await stat(c.input)).size>16000000) throw new Error('Input exceeds 16 MB');
  const source=new TextDecoder('utf-8',{fatal:true}).decode(await readFile(c.input));
- const r=JSON.parse(run(source,c.action,c.track,c.item,c.at,c.duration,c.rate));
+ const r=JSON.parse(run(source,c.action,c.track,c.item,c.at,c.duration,c.rate,c.path||''));
  if(r.output!==null) await writeFile(c.output,r.output+'\n',{encoding:'utf8',flag:'wx'});
  (r.code===2?console.error:console.log)(r.body);process.exitCode=r.code;
 } catch(e) {console.error(JSON.stringify({error:e.message}));process.exitCode=2;}

@@ -2,7 +2,7 @@ import {run} from '../dist/moontimeline.mjs';
 const $=id=>document.getElementById(id);
 let source='', selected=null, history=[], description=null;
 function status(text,error=false){$('status').textContent=text;$('status').className=error?'error':'';}
-function call(action,track=0,item=0,at=0,duration=0){const r=JSON.parse(run(source,action,track,item,at,duration,1));if(r.code===2)throw new Error(JSON.parse(r.body).error);return r;}
+function call(action,track=0,item=0,at=0,duration=0){const r=JSON.parse(run(source,action,track,item,at,duration,1,''));if(r.code===2)throw new Error(JSON.parse(r.body).error);return r;}
 function node(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
 function render(){
  const d=description=JSON.parse(call('inspect').body);$('title').textContent=d.name||'未命名工程';$('duration').textContent=d.duration===null?'时长未知':`${d.duration.toFixed(3)} 秒`;

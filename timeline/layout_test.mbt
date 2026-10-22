@@ -38,17 +38,14 @@ test "empty timeline has zero duration" {
 ///|
 test "unknown duration fails instead of treating it as zero" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) => {
       let refs = c.media_references
       refs["DEFAULT_MEDIA"] = {
         ..refs["DEFAULT_MEDIA"],
         available_range: None,
       }
-      t.tracks.children[0].children[1] = @model.Clip({
-        ..c,
-        source_range: None,
-      })
+      track_at(t, 0).children[1] = @model.Clip({ ..c, source_range: None, })
       assert_true(@timeline.layout(t) is Err(_))
     }
     _ => fail("Expected clip")
@@ -58,13 +55,13 @@ test "unknown duration fails instead of treating it as zero" {
 ///|
 test "mixed rates disabled items and global labels do not shift layout" {
   let t = sample()
-  match t.tracks.children[0].children[0] {
+  match track_at(t, 0).children[0] {
     @model.Gap(g) => {
       let r = @range.TimeRange::new(
         @time.RationalTime::new(0.0, 30.0).unwrap(),
         @time.RationalTime::new(60.0, 30.0).unwrap(),
       ).unwrap()
-      t.tracks.children[0].children[0] = @model.Gap({
+      track_at(t, 0).children[0] = @model.Gap({
         source_range: r,
         attributes: { ..g.attributes, enabled: false, },
       })
@@ -88,4 +85,12 @@ test "transition keeps the cursor and stays out of placements" {
   let l = @timeline.layout(timeline).unwrap()
   assert_eq(l.duration_seconds, 2.0)
   assert_eq(l.items.length(), 1)
+}
+
+///|
+fn track_at(t : @model.Timeline, i : Int32) -> @model.Track {
+  match t.tracks.children[i] {
+    @model.Track(track) => track
+    _ => abort("expected track")
+  }
 }

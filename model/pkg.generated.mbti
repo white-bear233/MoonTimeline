@@ -37,6 +37,8 @@ pub(all) struct Gap {
 pub(all) enum Item {
   Clip(Clip)
   Gap(Gap)
+  Stack(Stack)
+  Track(Track)
   Opaque(Json)
 }
 
@@ -58,7 +60,7 @@ pub(all) struct MediaReference {
 pub(all) struct Stack {
   attributes : Attributes
   source_range : @range.TimeRange?
-  children : Array[Track]
+  children : Array[Item]
 }
 
 pub(all) struct Timeline {

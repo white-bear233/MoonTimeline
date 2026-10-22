@@ -8,9 +8,17 @@ import {
 }
 
 // Values
+pub fn duration_of(@model.Item) -> Result[Double, String]
+
+pub fn indices_of(String) -> Result[Array[Int32], String]
+
+pub fn item_at(@model.Timeline, Array[Int32]) -> Result[@model.Item, String]
+
 pub fn layout(@model.Timeline) -> Result[Layout, String]
 
 pub fn opaque_schema(Json) -> String
+
+pub fn path_of(Array[Int32]) -> String
 
 pub fn source_range(@model.Item) -> Result[@range.TimeRange, String]
 
@@ -25,6 +33,8 @@ pub(all) struct Layout {
 pub fn Layout::items_at(Self, Double) -> Result[Array[Placement], String]
 
 pub(all) struct Placement {
+  path : String
+  node : String
   track_index : Int32
   item_index : Int32
   start_seconds : Double

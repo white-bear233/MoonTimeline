@@ -9,9 +9,15 @@ import {
 // Values
 pub fn insert_gap(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@model.Timeline, String]
 
+pub fn insert_gap_at(@model.Timeline, Array[Int32], Int32, @time.RationalTime) -> Result[@model.Timeline, String]
+
 pub fn split(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@model.Timeline, String]
 
+pub fn split_at(@model.Timeline, Array[Int32], @time.RationalTime) -> Result[@model.Timeline, String]
+
 pub fn trim(@model.Timeline, Int32, Int32, @time.RationalTime, @time.RationalTime) -> Result[@model.Timeline, String]
+
+pub fn trim_at(@model.Timeline, Array[Int32], @time.RationalTime, @time.RationalTime) -> Result[@model.Timeline, String]
 
 // Errors
 

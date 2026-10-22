@@ -40,7 +40,16 @@ fn main {
       return
     }
   }
-  let r = @app.run(source, c.action, c.track, c.item, c.at, c.duration, c.rate)
+  let r = @app.run(
+    source,
+    c.action,
+    c.track,
+    c.item,
+    c.at,
+    c.duration,
+    c.rate,
+    c.path,
+  )
   match r.output {
     Some(s) =>
       match c.output {

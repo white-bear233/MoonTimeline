@@ -8,7 +8,7 @@ pub fn parse_args(Array[String]) -> Result[Config, String]
 
 pub fn response_json(Response) -> String
 
-pub fn run(String, String, Int32, Int32, Double, Double, Double) -> Response
+pub fn run(String, String, Int32, Int32, Double, Double, Double, String) -> Response
 
 // Errors
 
@@ -22,6 +22,7 @@ pub(all) struct Config {
   at : Double
   duration : Double
   rate : Double
+  path : String
 }
 
 pub(all) struct Response {

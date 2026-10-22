@@ -23,11 +23,11 @@ test "split conserves duration and source continuity without mutating input" {
   assert_eq(l.items[2].source.start().to_seconds().unwrap(), 12.0)
   assert_eq(l.items[2].source.end_seconds(), 15.0)
   assert_eq(@otio.write(original).unwrap(), before)
-  match edited.tracks.children[0].children[1] {
+  match track_at(edited, 0).children[1] {
     @model.Clip(c) => c.media_references.clear()
     _ => fail("Expected clip")
   }
-  match edited.tracks.children[0].children[2] {
+  match track_at(edited, 0).children[2] {
     @model.Clip(c) => assert_eq(c.media_references.length(), 1)
     _ => fail("Expected clip")
   }
@@ -66,7 +66,7 @@ test "gap insertion supports front and append" {
   assert_eq(@timeline.layout(appended).unwrap().duration_seconds, 9.0)
   assert_true(@edit.insert_gap(t, 0, 3, seconds(1.0)) is Err(_))
   assert_true(@edit.insert_gap(t, 0, 0, seconds(0.0)) is Err(_))
-  assert_eq(t.tracks.children[0].children.length(), 2)
+  assert_eq(track_at(t, 0).children.length(), 2)
 }
 
 ///|
@@ -86,16 +86,13 @@ test "gap can split and mixed-rate offset is rescaled" {
 ///|
 test "unknown range and structurally invalid inputs cannot edit" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) => {
       c.media_references["DEFAULT_MEDIA"] = {
         ..c.media_references["DEFAULT_MEDIA"],
         available_range: None,
       }
-      t.tracks.children[0].children[1] = @model.Clip({
-        ..c,
-        source_range: None,
-      })
+      track_at(t, 0).children[1] = @model.Clip({ ..c, source_range: None, })
       assert_true(@edit.split(t, 0, 1, seconds(1.0)) is Err(_))
       assert_true(@edit.trim(t, 0, 1, seconds(0.0), seconds(1.0)) is Err(_))
     }
@@ -112,7 +109,7 @@ test "trim shifts later items and keeps metadata independent" {
   let l = @timeline.layout(edited).unwrap()
   assert_eq(l.items[2].start_seconds, 3.0)
   assert_eq(l.duration_seconds, 6.0)
-  match edited.tracks.children[0].children[1] {
+  match track_at(edited, 0).children[1] {
     @model.Clip(c) =>
       match c.attributes.metadata {
         Object(o) => o.clear()
@@ -120,7 +117,7 @@ test "trim shifts later items and keeps metadata independent" {
       }
     _ => fail("Expected clip")
   }
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) =>
       match c.attributes.metadata {
         Object(o) => assert_eq(o.length(), 1)
@@ -128,4 +125,76 @@ test "trim shifts later items and keeps metadata independent" {
       }
     _ => fail("Expected clip")
   }
+}
+
+///|
+fn track_at(t : @model.Timeline, i : Int32) -> @model.Track {
+  match t.tracks.children[i] {
+    @model.Track(track) => track
+    _ => abort("expected track")
+  }
+}
+
+///|
+fn nested_sample() -> @model.Timeline {
+  @otio.read(
+    "{\"OTIO_SCHEMA\":\"Timeline.1\",\"metadata\":{},\"name\":\"nested\",\"global_start_time\":null,\"tracks\":{\"OTIO_SCHEMA\":\"Stack.1\",\"metadata\":{},\"name\":\"tracks\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"children\":[{\"OTIO_SCHEMA\":\"Track.1\",\"metadata\":{},\"name\":\"V1\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"kind\":\"Video\",\"children\":[{\"OTIO_SCHEMA\":\"Clip.2\",\"metadata\":{},\"name\":\"c1\",\"source_range\":{\"OTIO_SCHEMA\":\"TimeRange.1\",\"duration\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":24.0,\"value\":96.0},\"start_time\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":24.0,\"value\":0.0}},\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"media_references\":{\"DEFAULT_MEDIA\":{\"OTIO_SCHEMA\":\"MissingReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null}},\"active_media_reference_key\":\"DEFAULT_MEDIA\"},{\"OTIO_SCHEMA\":\"Stack.1\",\"metadata\":{},\"name\":\"nested\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"children\":[{\"OTIO_SCHEMA\":\"Track.1\",\"metadata\":{},\"name\":\"V2\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"kind\":\"Video\",\"children\":[{\"OTIO_SCHEMA\":\"Clip.2\",\"metadata\":{},\"name\":\"c2\",\"source_range\":{\"OTIO_SCHEMA\":\"TimeRange.1\",\"duration\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":24.0,\"value\":48.0},\"start_time\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":24.0,\"value\":0.0}},\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"media_references\":{\"DEFAULT_MEDIA\":{\"OTIO_SCHEMA\":\"MissingReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null}},\"active_media_reference_key\":\"DEFAULT_MEDIA\"}]}]}]}]}}",
+  ).unwrap()
+}
+
+///|
+test "split inside a nested stack by path" {
+  let original = nested_sample()
+  let before = @otio.write(original).unwrap()
+  let indices : Array[Int32] = [0, 1, 0, 0]
+  let edited = @edit.split_at(original, indices, seconds(1.0)).unwrap()
+  let l = @timeline.layout(edited).unwrap()
+  assert_eq(l.duration_seconds, 6.0)
+  assert_eq(l.items.length(), 3)
+  assert_eq(@otio.write(original).unwrap(), before)
+  assert_true(!@validate.has_errors(@validate.validate(edited)))
+}
+
+///|
+test "trim a nested composition window" {
+  let indices : Array[Int32] = [0, 1]
+  let edited = @edit.trim_at(
+    nested_sample(),
+    indices,
+    seconds(0.5),
+    seconds(1.0),
+  ).unwrap()
+  let l = @timeline.layout(edited).unwrap()
+  assert_eq(l.duration_seconds, 5.0)
+  assert_eq(l.items.length(), 2)
+  assert_true(!@validate.has_errors(@validate.validate(edited)))
+}
+
+///|
+test "trim a root track to a window" {
+  let indices : Array[Int32] = [0]
+  let edited = @edit.trim_at(
+    nested_sample(),
+    indices,
+    seconds(1.0),
+    seconds(3.0),
+  ).unwrap()
+  let l = @timeline.layout(edited).unwrap()
+  assert_eq(l.duration_seconds, 3.0)
+}
+
+///|
+test "gap insertion inside a nested track" {
+  let indices : Array[Int32] = [0, 1, 0]
+  let edited = @edit.insert_gap_at(nested_sample(), indices, 0, seconds(0.5)).unwrap()
+  assert_eq(@timeline.layout(edited).unwrap().duration_seconds, 6.5)
+}
+
+///|
+test "splitting a root track is refused instead of duplicating it" {
+  let indices : Array[Int32] = [0]
+  assert_true(
+    @edit.split_at(nested_sample(), indices, seconds(1.0))
+    is Err("cannot_split_root"),
+  )
 }

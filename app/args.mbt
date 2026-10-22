@@ -8,6 +8,7 @@ pub(all) struct Config {
   at : Double
   duration : Double
   rate : Double
+  path : String
 }
 
 ///|
@@ -27,7 +28,7 @@ pub fn parse_args(args : Array[String]) -> Result[Config, String] {
     let key = args[i]
     if ![
         "--output", "--track", "--clip", "--at-frame", "--duration-frames", "--rate",
-        "--format",
+        "--format", "--path",
       ].contains(key) ||
       i + 1 >= args.length() ||
       opts.contains(key) {
@@ -47,10 +48,15 @@ pub fn parse_args(args : Array[String]) -> Result[Config, String] {
     return Err("Read-only commands do not accept --output")
   }
   if ["split", "trim", "gap"].contains(action) {
-    for key in ["--track", "--clip", "--rate"] {
-      if opts.get(key) is None {
-        return Err("Required: " + key)
+    if opts.get("--path") is None {
+      for key in ["--track", "--clip"] {
+        if opts.get(key) is None {
+          return Err("Required: " + key + " (or --path)")
+        }
       }
+    }
+    if opts.get("--rate") is None {
+      return Err("Required: --rate")
     }
     if action != "gap" && opts.get("--at-frame") is None {
       return Err("Required: --at-frame")
@@ -96,6 +102,7 @@ pub fn parse_args(args : Array[String]) -> Result[Config, String] {
     at,
     duration,
     rate,
+    path: opts.get("--path").unwrap_or(""),
   })
 }
 
@@ -113,5 +120,6 @@ pub fn config_json(c : Config) -> String {
     "at": Json::number(c.at),
     "duration": Json::number(c.duration),
     "rate": Json::number(c.rate),
+    "path": Json::string(c.path),
   }).stringify()
 }

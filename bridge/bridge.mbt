@@ -7,8 +7,11 @@ pub fn run(
   at : Double,
   duration : Double,
   rate : Double,
+  path : String,
 ) -> String {
-  @app.response_json(@app.run(source, action, track, item, at, duration, rate))
+  @app.response_json(
+    @app.run(source, action, track, item, at, duration, rate, path),
+  )
 }
 
 ///|

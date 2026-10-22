@@ -78,9 +78,33 @@ fn encode_media(m : @model.MediaReference) -> Json {
 }
 
 ///|
+fn encode_track(track : @model.Track) -> Json {
+  let o = encode_attributes(track.attributes, "Track.1")
+  o["kind"] = Json::string(
+    match track.kind {
+      @model.Video => "Video"
+      @model.Audio => "Audio"
+    },
+  )
+  o["source_range"] = encode_optional_range(track.source_range)
+  o["children"] = Json::array(track.children.map(encode_item))
+  Json::object(o)
+}
+
+///|
+fn encode_stack(stack : @model.Stack) -> Json {
+  let o = encode_attributes(stack.attributes, "Stack.1")
+  o["source_range"] = encode_optional_range(stack.source_range)
+  o["children"] = Json::array(stack.children.map(encode_item))
+  Json::object(o)
+}
+
+///|
 fn encode_item(item : @model.Item) -> Json {
   match item {
     @model.Opaque(raw) => raw
+    @model.Stack(s) => encode_stack(s)
+    @model.Track(t) => encode_track(t)
     @model.Gap(g) => {
       let o = encode_attributes(g.attributes, "Gap.1")
       o["source_range"] = encode_range(g.source_range)
@@ -104,21 +128,6 @@ fn encode_item(item : @model.Item) -> Json {
 
 ///|
 fn encode_timeline(t : @model.Timeline) -> Json {
-  let tracks = t.tracks.children.map(fn(track) {
-    let o = encode_attributes(track.attributes, "Track.1")
-    o["kind"] = Json::string(
-      match track.kind {
-        @model.Video => "Video"
-        @model.Audio => "Audio"
-      },
-    )
-    o["source_range"] = encode_optional_range(track.source_range)
-    o["children"] = Json::array(track.children.map(encode_item))
-    Json::object(o)
-  })
-  let stack = encode_attributes(t.tracks.attributes, "Stack.1")
-  stack["source_range"] = encode_optional_range(t.tracks.source_range)
-  stack["children"] = Json::array(tracks)
   let root = {
     "OTIO_SCHEMA": Json::string("Timeline.1"),
     "name": Json::string(t.name),
@@ -127,7 +136,7 @@ fn encode_timeline(t : @model.Timeline) -> Json {
       None => Json::null()
       Some(v) => encode_time(v)
     },
-    "tracks": Json::object(stack),
+    "tracks": encode_stack(t.tracks),
   }
   merge_extra(root, t.extra)
   Json::object(root)

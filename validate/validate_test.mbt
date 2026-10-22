@@ -13,7 +13,7 @@ test "valid fixture has no diagnostics" {
 ///|
 test "unknown availability is informational not out of bounds" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) => {
       c.media_references["DEFAULT_MEDIA"] = {
         ..c.media_references["DEFAULT_MEDIA"],
@@ -31,9 +31,9 @@ test "unknown availability is informational not out of bounds" {
 ///|
 test "known bounds violation has path and error severity" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) => {
-      let short = match t.tracks.children[0].children[0] {
+      let short = match track_at(t, 0).children[0] {
         @model.Gap(g) => g.source_range
         _ => fail("Expected gap")
       }
@@ -58,17 +58,14 @@ test "known bounds violation has path and error severity" {
 ///|
 test "unknown duration and missing media are distinct warnings" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) => {
       c.media_references["DEFAULT_MEDIA"] = {
         ..c.media_references["DEFAULT_MEDIA"],
         kind: @model.Missing,
         available_range: None,
       }
-      t.tracks.children[0].children[1] = @model.Clip({
-        ..c,
-        source_range: None,
-      })
+      track_at(t, 0).children[1] = @model.Clip({ ..c, source_range: None, })
       let issues = @validate.validate(t)
       assert_true(!@validate.has_errors(issues))
       assert_true(issues.any(fn(i) { i.code == "unknown_duration" }))
@@ -81,9 +78,9 @@ test "unknown duration and missing media are distinct warnings" {
 ///|
 test "invalid active key is an error" {
   let t = sample()
-  match t.tracks.children[0].children[1] {
+  match track_at(t, 0).children[1] {
     @model.Clip(c) =>
-      t.tracks.children[0].children[1] = @model.Clip({
+      track_at(t, 0).children[1] = @model.Clip({
         ..c,
         active_media_reference_key: "bad",
       })
@@ -106,20 +103,28 @@ test "preserved transition is informational" {
 }
 
 ///|
-test "preserved unsupported item is an error" {
-  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"nested\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}]}]}}"
+test "nested stack is computed rather than rejected" {
+  let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"nested\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 24.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}]}]}}"
   let timeline = @otio.read(source).unwrap()
   let issues = @validate.validate(timeline)
-  assert_true(@validate.has_errors(issues))
-  assert_true(issues.any(fn(i) { i.code == "unsupported_item" }))
+  assert_true(!@validate.has_errors(issues))
+  assert_true(@timeline.layout(timeline).unwrap().duration_seconds == 1.0)
 }
 
 ///|
-test "trimmed stack is preserved and reported" {
+test "trimmed stack window becomes the layout duration" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
   let timeline = @otio.read(source).unwrap()
   let issues = @validate.validate(timeline)
   assert_true(!@validate.has_errors(issues))
   assert_true(issues.any(fn(i) { i.code == "composition_trimmed" }))
-  assert_true(@timeline.layout(timeline) is Err("composition_trimmed"))
+  assert_true(@timeline.layout(timeline).unwrap().duration_seconds == 2.0)
+}
+
+///|
+fn track_at(t : @model.Timeline, i : Int32) -> @model.Track {
+  match t.tracks.children[i] {
+    @model.Track(track) => track
+    _ => abort("expected track")
+  }
 }

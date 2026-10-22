@@ -80,9 +80,13 @@ pub(all) struct Gap {
 }
 
 ///|
+/// An item on a track. Nested compositions are first-class so their trimmed
+/// windows participate in layout instead of being preserved blindly.
 pub(all) enum Item {
   Clip(Clip)
   Gap(Gap)
+  Stack(Stack)
+  Track(Track)
   /// Preserved verbatim (for example Transition.1) but not part of the computed subset.
   Opaque(Json)
 }
@@ -94,8 +98,7 @@ pub(all) enum TrackKind {
 }
 
 ///|
-/// Children are sequential. Their placement is computed by the later layout module.
-/// `source_range` trims the composition; a non-empty value is preserved but not computed.
+/// Children are sequential. `source_range` trims the composition to a window.
 pub(all) struct Track {
   attributes : Attributes
   kind : TrackKind
@@ -104,11 +107,12 @@ pub(all) struct Track {
 }
 
 ///|
-/// Root tracks are simultaneous. `source_range` trims the stack.
+/// Children are simultaneous. `source_range` trims the stack to a window.
+/// Children are items so a stack can hold tracks, nested stacks or loose clips.
 pub(all) struct Stack {
   attributes : Attributes
   source_range : @range.TimeRange?
-  children : Array[Track]
+  children : Array[Item]
 }
 
 ///|

@@ -37,6 +37,6 @@ test "writer rejects invalid models and nonfinite metadata" {
 test "clone owns independent nested containers" {
   let t = sample()
   let copy = @otio.clone(t).unwrap()
-  copy.tracks.children[0].children.clear()
-  assert_eq(t.tracks.children[0].children.length(), 2)
+  track_at(copy, 0).children.clear()
+  assert_eq(track_at(t, 0).children.length(), 2)
 }

@@ -36,16 +36,26 @@ fn issues_json(t : @model.Timeline) -> Json {
 
 ///|
 fn describe(t : @model.Timeline) -> Json {
-  let tracks = t.tracks.children.map(fn(track) {
-    Json::object({
-      "name": Json::string(track.attributes.name),
-      "kind": Json::string(
-        match track.kind {
-          @model.Video => "Video"
-          @model.Audio => "Audio"
-        },
-      ),
-    })
+  let tracks = t.tracks.children.map(fn(child) {
+    match child {
+      @model.Track(track) =>
+        Json::object({
+          "name": Json::string(track.attributes.name),
+          "kind": Json::string(
+            match track.kind {
+              @model.Video => "Video"
+              @model.Audio => "Audio"
+            },
+          ),
+        })
+      @model.Stack(stack) =>
+        Json::object({
+          "name": Json::string(stack.attributes.name),
+          "kind": Json::string("Stack"),
+        })
+      _ =>
+        Json::object({ "name": Json::string(""), "kind": Json::string("item") })
+    }
   })
   let o = {
     "name": Json::string(t.name),
@@ -62,17 +72,27 @@ fn describe(t : @model.Timeline) -> Json {
       o["duration"] = Json::number(l.duration_seconds)
       o["items"] = Json::array(
         l.items.map(fn(p) {
-          let item = t.tracks.children[p.track_index].children[p.item_index]
-          let (name, kind) = match item {
-            @model.Clip(c) => (c.attributes.name, "clip")
-            @model.Gap(g) => (g.attributes.name, "gap")
-            @model.Opaque(raw) => (@timeline.opaque_schema(raw), "opaque")
+          let name = match @timeline.indices_of(p.path) {
+            Ok(indices) =>
+              match @timeline.item_at(t, indices) {
+                Ok(item) =>
+                  match item {
+                    @model.Clip(c) => c.attributes.name
+                    @model.Gap(g) => g.attributes.name
+                    @model.Stack(s) => s.attributes.name
+                    @model.Track(tr) => tr.attributes.name
+                    @model.Opaque(_) => ""
+                  }
+                Err(_) => ""
+              }
+            Err(_) => ""
           }
           Json::object({
+            "path": Json::string(p.path),
             "track": Json::number(p.track_index.to_double()),
             "index": Json::number(p.item_index.to_double()),
             "name": Json::string(name),
-            "kind": Json::string(kind),
+            "kind": Json::string(p.node),
             "start": Json::number(p.start_seconds),
             "end": Json::number(p.end_seconds),
             "source_start": Json::number(p.source.start().to_seconds().unwrap()),
@@ -86,6 +106,17 @@ fn describe(t : @model.Timeline) -> Json {
 }
 
 ///|
+fn indices_for(path : String) -> Result[Array[Int32]?, String] {
+  if path == "" {
+    return Ok(None)
+  }
+  match @timeline.indices_of(path) {
+    Ok(v) => Ok(Some(v))
+    Err(e) => Err(e)
+  }
+}
+
+///|
 /// Shared command engine for native CLI, Node adapter and browser.
 pub fn run(
   source : String,
@@ -95,6 +126,7 @@ pub fn run(
   at : Double,
   duration : Double,
   rate : Double,
+  path : String,
 ) -> Response {
   let t = match @otio.read(source) {
     Ok(t) => t
@@ -114,6 +146,10 @@ pub fn run(
       output: None,
     }
   }
+  let indices = match indices_for(path) {
+    Ok(v) => v
+    Err(e) => return error(e)
+  }
   let result = if action == "export" {
     Ok(t)
   } else {
@@ -126,9 +162,21 @@ pub fn run(
       Err(_) => return error("Invalid duration/rate")
     }
     match action {
-      "split" => @edit.split(t, track, item, offset)
-      "trim" => @edit.trim(t, track, item, offset, length)
-      "gap" => @edit.insert_gap(t, track, item, length)
+      "split" =>
+        match indices {
+          Some(ix) => @edit.split_at(t, ix, offset)
+          None => @edit.split(t, track, item, offset)
+        }
+      "trim" =>
+        match indices {
+          Some(ix) => @edit.trim_at(t, ix, offset, length)
+          None => @edit.trim(t, track, item, offset, length)
+        }
+      "gap" =>
+        match indices {
+          Some(ix) => @edit.insert_gap_at(t, ix, item, length)
+          None => @edit.insert_gap(t, track, item, length)
+        }
       _ => return error("Unknown command")
     }
   }

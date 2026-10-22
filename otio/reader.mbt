@@ -277,6 +277,12 @@ fn missing_reference() -> @model.MediaReference {
 fn item(j : Json, path : String) -> @model.Item raise Decode {
   let o = object(j, path)
   let tag = string(field(o, "OTIO_SCHEMA", path), path + "/OTIO_SCHEMA")
+  if tag == "Stack.1" {
+    return @model.Stack(stack(j, path))
+  }
+  if tag == "Track.1" || tag == "Sequence.1" {
+    return @model.Track(track(j, path))
+  }
   if tag != "Clip.1" && tag != "Clip.2" && tag != "Gap.1" {
     return @model.Opaque(Json::object(o))
   }
@@ -349,7 +355,11 @@ fn composition(
       "Expected " + expected + ", got " + actual,
     )
   }
-  let structural = ["children", "kind", "source_range"]
+  let structural = if expected == "Track.1" {
+    ["children", "kind", "source_range"]
+  } else {
+    ["children", "source_range"]
+  }
   let attrs = attributes(o, path, structural)
   let source = maybe_range(optional(o, "source_range"), path + "/source_range")
   (attrs, source)
@@ -373,16 +383,23 @@ fn track(j : Json, path : String) -> @model.Track raise Decode {
 }
 
 ///|
+/// A Stack holds simultaneous items: tracks, nested stacks or loose clips.
+fn stack(j : Json, path : String) -> @model.Stack raise Decode {
+  let o = object(j, path)
+  let (attrs, source) = composition(o, "Stack.1", path)
+  let children = array(field(o, "children", path), path + "/children")
+  let items = []
+  for i = 0; i < children.length(); i = i + 1 {
+    items.push(item(children[i], path + "/children/" + i.to_string()))
+  }
+  { attributes: attrs, source_range: source, children: items, }
+}
+
+///|
 fn timeline(j : Json) -> @model.Timeline raise Decode {
   let o = object(j, "")
   schema(o, "Timeline.1", "")
-  let stack = object(field(o, "tracks", ""), "/tracks")
-  let (attrs, stack_range) = composition(stack, "Stack.1", "/tracks")
-  let children = array(field(stack, "children", "/tracks"), "/tracks/children")
-  let tracks = []
-  for i = 0; i < children.length(); i = i + 1 {
-    tracks.push(track(children[i], "/tracks/children/" + i.to_string()))
-  }
+  let root = stack(field(o, "tracks", ""), "/tracks")
   let global = match optional(o, "global_start_time") {
     Null => None
     v => Some(time(v, "/global_start_time"))
@@ -396,7 +413,7 @@ fn timeline(j : Json) -> @model.Timeline raise Decode {
     name: name(o, ""),
     metadata: metadata(o, ""),
     global_start_time: global,
-    tracks: { attributes: attrs, source_range: stack_range, children: tracks, },
+    tracks: root,
     extra: Json::object(extra),
   }
 }

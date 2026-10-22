@@ -54,24 +54,24 @@ test "source range is independent of media availability" {
       attributes: @model.Attributes::new("tracks"),
       source_range: None,
       children: [
-        {
+        @model.Track({
           attributes: @model.Attributes::new("V1"),
           kind: @model.Video,
           source_range: None,
           children: [@model.Clip(clip)],
-        },
-        {
+        }),
+        @model.Track({
           attributes: @model.Attributes::new("A1"),
           kind: @model.Audio,
           source_range: None,
           children: [],
-        },
+        }),
       ],
     },
     extra: Json::empty_object(),
   }
   assert_eq(timeline.tracks.children.length(), 2)
-  assert_eq(timeline.tracks.children[0].children.length(), 1)
+  assert_eq(track_at(timeline, 0).children.length(), 1)
 }
 
 ///|
@@ -94,4 +94,12 @@ test "available range is used only when source is absent" {
     clip.effective_range().unwrap().duration().to_seconds().unwrap(),
     20.0,
   )
+}
+
+///|
+fn track_at(t : @model.Timeline, i : Int32) -> @model.Track {
+  match t.tracks.children[i] {
+    @model.Track(track) => track
+    _ => abort("expected track")
+  }
 }

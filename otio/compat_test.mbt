@@ -4,7 +4,7 @@
 test "legacy Clip.1 and Sequence.1 are upgraded on write" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"legacy\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Sequence.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Clip.1\", \"metadata\": {}, \"name\": \"c\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"media_reference\": {\"OTIO_SCHEMA\": \"ExternalReference.1\", \"metadata\": {}, \"name\": null, \"available_range\": null, \"available_image_bounds\": null, \"target_url\": \"legacy.mov\"}}]}]}}"
   let timeline = @otio.read(source).unwrap()
-  match timeline.tracks.children[0].children[0] {
+  match track_at(timeline, 0).children[0] {
     @model.Clip(c) => {
       assert_true(
         c.media_references["DEFAULT_MEDIA"].kind

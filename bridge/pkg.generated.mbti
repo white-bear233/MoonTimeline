@@ -4,7 +4,7 @@ package "white-bear233/moontimeline/bridge"
 // Values
 pub fn parse(Array[String]) -> String
 
-pub fn run(String, String, Int32, Int32, Double, Double, Double) -> String
+pub fn run(String, String, Int32, Int32, Double, Double, Double, String) -> String
 
 // Errors
 

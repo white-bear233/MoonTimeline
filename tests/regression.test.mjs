@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {run} from '../dist/moontimeline.mjs';
 const original=readFileSync('fixtures/valid/gap_clip.otio','utf8');
-const call=(s,a='inspect',ti=0,ii=0,at=0,d=0,r=24)=>JSON.parse(run(s,a,ti,ii,at,d,r));
+const call=(s,a='inspect',ti=0,ii=0,at=0,d=0,r=24)=>JSON.parse(run(s,a,ti,ii,at,d,r,''));
 test('size limit and malformed JSON cannot crash the API',()=>{
  for(const s of [' '.repeat(4000001),'['.repeat(100)+']'.repeat(100),'null','[]','{"OTIO_SCHEMA":', '{"x":1,"x":2}'])assert.equal(call(s).code,2);
 });
