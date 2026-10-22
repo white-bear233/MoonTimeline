@@ -11,7 +11,7 @@
 第 6 步读取器支持 RationalTime.1、TimeRange.1、Timeline.1、Stack.1、Track.1、Clip.2、Gap.1、
 ExternalReference.1、MissingReference.1 的受限子集。第 7 步已实现对应子集导出，并用官方 OTIO 验证完整样例往返。
 
-> 0.1.1 起，超出计算子集的节点不再导致整份文件读取失败：它们按原始 JSON 保留，读写在，计算要么按已知语义（转场为零时长）处理，要么显式拒绝。能力分档见下节。
+> 0.1.2 起，轨道/Stack 的 `source_range` 裁剪与嵌套组合参与布局，并可按路径寻址编辑；未知节点仍按原始 JSON 保留。能力分档见下节。
 
 fixtures/manifest.json 区分非法输入和合法但超出项目范围的 OTIO，不能将两者混淆。
 gap_clip.otio 的轨道位置为 [2,7) 秒，素材范围为 [10,15) 秒，用于防止坐标混用。
@@ -27,28 +27,29 @@ gap_clip.otio 的轨道位置为 [2,7) 秒，素材范围为 [10,15) 秒，用�
 | Clip.1（历史格式，含单数 `media_reference`） | 是 | 是 | 是 | 读取时迁移到 `DEFAULT_MEDIA`，写回升级为 Clip.2 |
 | RationalTime.1 / TimeRange.1 | 是 | 是 | 是 | 值域、速率、舍入全部校验 |
 | ExternalReference.1 / MissingReference.1 | 是 | 是 | 是 | 缺失素材与未知时长显式区分 |
-| Transition.1 | 保留原始 JSON | 按零时长跳过 | 否（随轨道保留） | 转场位于剪切点，不推进游标；游标前后关系不受影响 |
+| 嵌套 Stack / Track（作为轨道子项） | 是 | 是 | 是 | 按自身窗口布局并映射到父坐标；路径可寻址 |
+| 轨道 / Stack / 嵌套组合上的 `source_range`（裁剪） | 是 | 是 | 是 | 按窗口取交集、平移素材坐标；编辑通过改写窗口完成 |
+| Transition.1 | 保留原始 JSON | 按零时长跳过 | 否（随轨道保留） | 转场位于剪切点，不推进游标 |
 | Effect.1 / Marker.3 / 任意宿主扩展字段 | 保留原始 JSON | 忽略 | 不可单独编辑，随宿主写回 | 不再触发整体拒绝 |
 | GeneratorReference.1 / Color.1 等其它媒体 | 保留原始 JSON | 未知时长（Info） | 否 | 素材边界不可判定，`validate` 降低为提示 |
-| 轨道或 Stack 上的 `source_range`（修剪） | 保留 | 拒绝（`composition_trimmed`） | 否 | 修剪语义未实现，不静默按全长计算 |
-| 嵌套 Stack、其它未知条目 | 保留原始 JSON | 拒绝（`unsupported_item`，Error） | 否 | 时长无法确定，宁可报错也不猜 |
+| 其它未知条目 | 保留原始 JSON | 拒绝（`unsupported_item`，Error） | 否 | 时长无法确定，宁可报错也不猜 |
 | 非有限 JSON 字面量（`Inf` / `Infinity` / `NaN`） | 降级为 `null` 后读取 | 忽略 | — | Python `json` 默认会写出这些值；JSON 无法表示，字符串内不受影响 |
 | 超过 16 M UTF-16 单元的输入 | 拒绝（`input_limit`） | — | — | 与 CLI 的 16 MB 字节上限对应 |
 
 「解析」指能读入并原样写回；「计算」指参与布局、查询与校验；「编辑」指可以作为拆分/裁剪/插入的目标。
 
-## 外部语料结果（0.1.1）
+## 外部语料结果（0.1.2）
 
 用上游自己的 [sample_data](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/tree/v0.18.1/tests/sample_data) 做回归，`tools/check_external_corpus.mjs` 可复现：
 
 | 指标 | 结果 |
 |---|---|
 | 可读 | 13 / 13 |
-| 可计算（布局无错误） | 9 / 13 |
+| 可计算（布局无错误） | 13 / 13 |
 | 可写回 | 13 / 13 |
 | 写回后布局与条目数一致 | 13 / 13 |
 
-不可计算的 4 个文件都有明确原因：2 个带修剪（`composition_trimmed`），2 个含嵌套 Stack 等未知条目（`unsupported_item`）。这些文件仍然能读、能改其它部分、能完整写回。
+0.1.1 时因修剪与嵌套被拒绝计算的 4 个文件（`multiple_track`、`screening_example`、`nested_example`、`premiere_example`）现已全部可计算。
 
 ## 生态中的相近库（发布前查重，2026-10-21）
 

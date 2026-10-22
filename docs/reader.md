@@ -6,10 +6,10 @@ Diagnostic 包含 code、path、message；path 使用 JSON Pointer，根为 ""�
 
 解析范围：
 
-- 容器：Timeline.1 → Stack.1 → Track.1（含历史名 Sequence.1）。
+- 容器：Timeline.1 → Stack.1 → Track.1（含历史名 Sequence.1），嵌套组合可递归出现。
 - 条目：Clip.2、Clip.1（单数 `media_reference`，读入后迁移为 `DEFAULT_MEDIA`）、Gap.1。
 - 资源：RationalTime.1、TimeRange.1、ExternalReference.1、MissingReference.1。
-- 其它节点（Transition.1、嵌套 Stack、GeneratorReference.1、Color.1 等）连同未知字段、非空 effects/markers 一起按原始 JSON 保留在模型的 `extra` 或 `Opaque` 中，写出时原样合并。
+- 其它节点（Transition.1、GeneratorReference.1、Color.1 等）连同未知字段、非空 effects/markers 一起按原始 JSON 保留在模型的 `extra` 或 `Opaque` 中，写出时原样合并。
 
 因此读取不再因为「超出计算子集」而整体失败；分档行为见 [兼容说明](compatibility.md)。
 

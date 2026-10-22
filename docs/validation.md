@@ -90,3 +90,29 @@ Python 3.11 + OpenTimelineIO 0.18.1。版本安装地址已确认可访问。
 | 20,000 | 10.0 MB | 1,075 ms | 1,573 ms | 1,892 ms |
 
 复现：`node tools/check_external_corpus.mjs`、`node tools/bench.mjs`。
+
+# 0.1.2 裁剪与嵌套（2026-10-22）
+
+针对初审意见「OTIO 子集未覆盖轨道裁剪、嵌套组合」，补齐了这两类语义的计算与编辑。
+
+- 组合窗口：Track/Stack 的 `source_range` 作为视窗，子项按交集裁切并同步平移素材坐标；根 Stack 的窗口同样生效。
+- 嵌套组合：`Stack`/`Track` 作为轨道子项递归解析与布局，内部坐标映射到父级；`Stack` 子项可以是轨道、嵌套组合或散片。
+- 路径寻址：布局结果带 `/tracks/children/0/children/2/...` 路径；编辑新增 `split_at` / `trim_at` / `insert_gap_at`，CLI 增加 `--path`。
+- 安全编辑：对组合目标的 trim 只改写 `source_range`，不重写内部；组合 split 切成两段窗口；根轨道不可拆分（`cannot_split_root`）；失败不修改原工程。
+
+本地结果（Windows x64，moon 0.1.20261016）：
+
+| 项目 | 结果 |
+|---|---|
+| MoonBit 测试（JS / Wasm GC） | 175 项通过（新增 5 项嵌套/裁剪编辑用例） |
+| 上游 sample_data 可读 / 可计算 / 可写回 / 写回稳定 | **13 / 13** / **13 / 13** / **13 / 13** / **13 / 13** |
+| 0.1.1 时不可计算的 4 个文件 | 全部可计算（`multiple_track`、`screening_example`、`nested_example`、`premiere_example`） |
+
+规模基准（`node tools/bench.mjs`，扣除进程启动约 197 ms）：
+
+| 片段数 | 输入大小 | inspect | validate | export |
+|---|---|---|---|---|
+| 1,000 | 0.5 MB | 129 ms | 125 ms | 181 ms |
+| 5,000 | 2.5 MB | 506 ms | 578 ms | 746 ms |
+| 10,000 | 5.0 MB | 797 ms | 1,210 ms | 1,723 ms |
+| 20,000 | 10.0 MB | 1,807 ms | 2,724 ms | 3,459 ms |
