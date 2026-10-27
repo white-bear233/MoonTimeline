@@ -783,7 +783,9 @@ def free_function_cases():
 
 def core_function_cases():
     for method in ['type_version_map','release_to_schema_version_map']:
-        emit('functions',method,['core.'+method],'valid',[f'assert_true(@otiojson.equivalent(@core_api.{method}(),@otiojson.parse({raw(getattr(o.core,method)())}).unwrap()))'])
+        # C++ unordered_map iteration differs between MSVC and GCC wheels.
+        expected=json.loads(json.dumps(getattr(o.core,method)(),sort_keys=True))
+        emit('functions',method,['core.'+method],'valid',[f'assert_true(@otiojson.equivalent(@core_api.{method}(),@otiojson.parse({raw(expected)}).unwrap()))'])
     with tempfile.TemporaryDirectory() as temp:
         for failure in ['none','io','malformed']:
             path=Path(temp)/('missing' if failure=='io' else 'source.otio')
