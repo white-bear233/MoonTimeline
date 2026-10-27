@@ -3,6 +3,10 @@ fn finish(t : @model.Timeline) -> Result[@model.Timeline, String] {
   if @validate.has_errors(@validate.validate(t)) {
     return Err("invalid_timeline")
   }
+  match @timeline.layout(t) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
   match @otio.clone(t) {
     Ok(v) => Ok(v)
     Err(e) => Err(e.code + ":" + e.path)
@@ -148,7 +152,7 @@ fn node_window(item : @model.Item) -> Result[@range.TimeRange, String] {
         Some(r) => Ok(r)
         None => Err("no_explicit_range")
       }
-    @model.Opaque(_) => Err("opaque_item")
+    @model.Opaque(_) => return Err("opaque_item")
   }
   match explicit {
     Ok(r) => Ok(r)
@@ -213,7 +217,11 @@ pub fn split_at(
     Ok(r) => r
     Err(e) => return Err(e)
   }
-  let right = match subrange(window, at, length - at) {
+  let scalar = match item.playback_scalar() {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  let right = match subrange(window, at * scalar, length - at) {
     Ok(r) => r
     Err(e) => return Err(e)
   }
@@ -257,7 +265,11 @@ pub fn trim_at(
   if at < 0.0 || length <= 0.0 || at + length > available {
     return Err("trim_outside_item")
   }
-  let range = match subrange(window, at, length) {
+  let scalar = match item.playback_scalar() {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  let range = match subrange(window, at * scalar, length) {
     Ok(r) => r
     Err(e) => return Err(e)
   }
@@ -289,6 +301,14 @@ pub fn insert_gap_at(
   }
   if index < 0 || index > track.children.length() {
     return Err("item_index")
+  }
+  for neighbor in [index - 1, index] {
+    if neighbor >= 0 && neighbor < track.children.length() {
+      match @model.transition_of(track.children[neighbor]) {
+        Ok(Some(_)) => return Err("edit_would_retarget_transition")
+        _ => ()
+      }
+    }
   }
   let range = match
     @range.TimeRange::new(

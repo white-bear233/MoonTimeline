@@ -22,6 +22,10 @@ try {
   CheckExit
   .venv/Scripts/python.exe tools/check_edits.py
   CheckExit
+  node tools/build-js.mjs
+  CheckExit
+  .venv/Scripts/python.exe tools/check_review.py
+  CheckExit
   git diff --check
   CheckExit
 } finally { Pop-Location }

@@ -6,19 +6,37 @@ pub(all) struct Placement {
   item_index : Int32
   start_seconds : Double
   end_seconds : Double
+  /// Start in media coordinates; duration remains presentation duration.
   source : @range.TimeRange
+  time_scalar : Double
+  enabled : Bool
+}
+
+///|
+pub(all) struct TransitionPlacement {
+  path : String
+  left_path : String?
+  right_path : String?
+  /// Full range in timeline coordinates, before composition clipping.
+  start_seconds : Double
+  end_seconds : Double
+  cut_seconds : Double
+  visible_start_seconds : Double
+  visible_end_seconds : Double
+  in_seconds : Double
+  out_seconds : Double
   enabled : Bool
 }
 
 ///|
 pub(all) struct Layout {
   items : Array[Placement]
+  transitions : Array[TransitionPlacement]
   track_durations : Array[Double]
   duration_seconds : Double
 }
 
 ///|
-/// Content range of a clip or gap. Compositions have no single source range.
 pub fn source_range(item : @model.Item) -> Result[@range.TimeRange, String] {
   match item {
     @model.Gap(g) => Ok(g.source_range)
@@ -29,23 +47,17 @@ pub fn source_range(item : @model.Item) -> Result[@range.TimeRange, String] {
 }
 
 ///|
-/// Schema tag of a preserved node. Transitions are zero-duration in OTIO: they
-/// sit at a cut and do not advance the track cursor.
 pub fn opaque_schema(j : Json) -> String {
-  match j {
-    Object(o) =>
-      match o.get("OTIO_SCHEMA") {
-        Some(String(s)) => s
-        _ => ""
-      }
-    _ => ""
-  }
+  @model.schema_name(j)
 }
 
 ///|
-fn span(range : @range.TimeRange) -> (Double, Double) {
-  let start = range.start().to_seconds().unwrap()
-  (start, start + range.duration().to_seconds().unwrap())
+fn finite(n : Double) -> Result[Double, String] {
+  if n.is_inf() || n.is_nan() {
+    Err("layout_overflow")
+  } else {
+    Ok(n)
+  }
 }
 
 ///|
@@ -54,99 +66,183 @@ fn range_of(
   duration : Double,
   rate : Double,
 ) -> Result[@range.TimeRange, String] {
-  let rt = match @time.RationalTime::new(start * rate, rate) {
+  let a = match @time.RationalTime::new(start * rate, rate) {
     Ok(v) => v
-    Err(_) => return Err("time_overflow")
+    Err(_) => return Err("source_overflow")
   }
-  let d = match @time.RationalTime::new(duration * rate, rate) {
+  let b = match @time.RationalTime::new(duration * rate, rate) {
     Ok(v) => v
-    Err(_) => return Err("time_overflow")
+    Err(_) => return Err("source_overflow")
   }
-  @range.TimeRange::new(rt, d)
+  @range.TimeRange::new(a, b)
 }
 
 ///|
-fn shift_range(
-  range : @range.TimeRange,
-  offset : Double,
-) -> Result[@range.TimeRange, String] {
-  let (start, end) = span(range)
-  range_of(start + offset, end - start, range.start().rate())
+fn is_transition(item : @model.Item) -> Bool {
+  match item {
+    @model.Opaque(raw) => opaque_schema(raw) == "Transition.1"
+    _ => false
+  }
 }
 
 ///|
-/// Natural duration in seconds: `source_range` wins, otherwise content extent.
-fn item_duration(item : @model.Item) -> Result[Double, String] {
+/// OTIO duration, not sequential advancement. A transition has nonzero duration.
+pub fn duration_of(item : @model.Item) -> Result[Double, String] {
   match item {
     @model.Clip(c) =>
       match c.effective_range() {
-        Ok(r) => {
-          let (start, end) = span(r)
-          Ok(end - start)
-        }
+        Ok(r) => Ok(r.duration().to_seconds().unwrap())
         Err(e) => Err("unknown_duration:" + e)
       }
-    @model.Gap(g) => {
-      let (start, end) = span(g.source_range)
-      Ok(end - start)
-    }
-    @model.Stack(s) => stack_duration(s)
-    @model.Track(t) => track_duration(t)
+    @model.Gap(g) => Ok(g.source_range.duration().to_seconds().unwrap())
+    @model.Track(t) =>
+      match t.source_range {
+        Some(r) => Ok(r.duration().to_seconds().unwrap())
+        None => {
+          let mut total = 0.0
+          for child in t.children {
+            if is_transition(child) {
+              continue
+            }
+            match duration_of(child) {
+              Ok(d) => total = total + d
+              Err(e) => return Err(e)
+            }
+          }
+          if t.children.length() > 0 {
+            match @model.transition_of(t.children[0]) {
+              Ok(Some(tr)) => total = total + tr.in_offset.to_seconds().unwrap()
+              Err(e) => return Err(e)
+              _ => ()
+            }
+            match @model.transition_of(t.children[t.children.length() - 1]) {
+              Ok(Some(tr)) =>
+                total = total + tr.out_offset.to_seconds().unwrap()
+              Err(e) => return Err(e)
+              _ => ()
+            }
+          }
+          finite(total)
+        }
+      }
+    @model.Stack(s) =>
+      match s.source_range {
+        Some(r) => Ok(r.duration().to_seconds().unwrap())
+        None => {
+          let mut total = 0.0
+          for child in s.children {
+            if is_transition(child) {
+              return Err("transition_requires_track")
+            }
+            match duration_of(child) {
+              Ok(d) => if d > total { total = d }
+              Err(e) => return Err(e)
+            }
+          }
+          finite(total)
+        }
+      }
     @model.Opaque(raw) =>
-      if opaque_schema(raw) == "Transition.1" {
-        Ok(0.0)
-      } else {
-        Err("unsupported_item:" + opaque_schema(raw))
+      match @model.transition_of(item) {
+        Ok(Some(tr)) =>
+          finite(
+            tr.in_offset.to_seconds().unwrap() +
+            tr.out_offset.to_seconds().unwrap(),
+          )
+        Err(e) => Err(e)
+        _ => Err("unsupported_item:" + opaque_schema(raw))
       }
   }
 }
 
 ///|
-fn track_duration(track : @model.Track) -> Result[Double, String] {
-  match track.source_range {
-    Some(r) => {
-      let (start, end) = span(r)
-      Ok(end - start)
-    }
-    None => {
-      let mut total = 0.0
-      for item in track.children {
-        match item_duration(item) {
-          Ok(d) => total = total + d
-          Err(e) => return Err(e)
+pub(all) struct TransitionIssue {
+  index : Int32
+  code : String
+}
+
+///|
+/// Structural constraints from OTIO's timeline-structure specification.
+/// Boundary transitions use implicit gaps; zero-duration gaps are valid fades.
+pub fn transition_issues(track : @model.Track) -> Array[TransitionIssue] {
+  let issues : Array[TransitionIssue] = []
+  let children = track.children
+  for i = 0; i < children.length(); i = i + 1 {
+    match @model.transition_of(children[i]) {
+      Err(e) => issues.push({ index: i, code: e, })
+      Ok(Some(tr)) => {
+        let a = tr.in_offset.to_seconds().unwrap()
+        let b = tr.out_offset.to_seconds().unwrap()
+        for side in [0, 1] {
+          let n = if side == 0 { i - 1 } else { i + 1 }
+          if n < 0 || n >= children.length() {
+            continue
+          }
+          if is_transition(children[n]) {
+            issues.push({ index: i, code: "adjacent_transitions", })
+            continue
+          }
+          match duration_of(children[n]) {
+            Ok(d) => {
+              let zero_gap = children[n] is @model.Gap(_) && d == 0.0
+              if !zero_gap && (if side == 0 { a } else { b }) > d + 1.0e-9 {
+                issues.push({ index: i, code: "transition_exceeds_neighbor", })
+              }
+            }
+            Err(_) =>
+              issues.push({ index: i, code: "unknown_transition_neighbor", })
+          }
         }
       }
-      Ok(total)
+      _ => ()
     }
-  }
-}
-
-///|
-fn stack_duration(stack : @model.Stack) -> Result[Double, String] {
-  match stack.source_range {
-    Some(r) => {
-      let (start, end) = span(r)
-      Ok(end - start)
-    }
-    None => {
-      let mut total = 0.0
-      for child in stack.children {
-        match item_duration(child) {
-          Ok(d) => if d > total { total = d }
-          Err(e) => return Err(e)
-        }
+    if i > 0 && i + 1 < children.length() && !is_transition(children[i]) {
+      match
+        (
+          @model.transition_of(children[i - 1]),
+          @model.transition_of(children[i + 1]),
+          duration_of(children[i]),
+        ) {
+        (Ok(Some(a)), Ok(Some(b)), Ok(d)) =>
+          if a.out_offset.to_seconds().unwrap() +
+            b.in_offset.to_seconds().unwrap() >
+            d + 1.0e-9 {
+            issues.push({ index: i, code: "overlapping_transitions", })
+          }
+        _ => ()
       }
-      Ok(total)
     }
   }
+  issues
 }
 
 ///|
-fn window(source : @range.TimeRange?, content : Double) -> (Double, Double) {
-  match source {
-    Some(r) => span(r)
-    None => (0.0, content)
+/// Full transition range in its Track coordinates, even outside the trim window.
+pub fn transition_range(
+  track : @model.Track,
+  index : Int32,
+) -> Result[@range.TimeRange, String] {
+  if index < 0 || index >= track.children.length() {
+    return Err("item_index")
   }
+  let tr = match @model.transition_of(track.children[index]) {
+    Ok(Some(v)) => v
+    Err(e) => return Err(e)
+    _ => return Err("not_a_transition")
+  }
+  let mut cursor = 0.0
+  for i = 0; i < index; i = i + 1 {
+    if is_transition(track.children[i]) {
+      continue
+    }
+    match duration_of(track.children[i]) {
+      Ok(d) => cursor = cursor + d
+      Err(e) => return Err(e)
+    }
+  }
+  let a = tr.in_offset.to_seconds().unwrap()
+  let b = tr.out_offset.to_seconds().unwrap()
+  range_of(cursor - a, a + b, tr.in_offset.rate())
 }
 
 ///|
@@ -166,113 +262,186 @@ fn intersect(
 }
 
 ///|
-fn item_enabled(item : @model.Item) -> Bool {
+fn attributes(item : @model.Item) -> @model.Attributes {
   match item {
-    @model.Clip(c) => c.attributes.enabled
-    @model.Gap(g) => g.attributes.enabled
-    @model.Stack(s) => s.attributes.enabled
-    @model.Track(t) => t.attributes.enabled
-    @model.Opaque(_) => true
+    @model.Clip(c) => c.attributes
+    @model.Gap(g) => g.attributes
+    @model.Track(t) => t.attributes
+    @model.Stack(s) => s.attributes
+    @model.Opaque(_) => @model.Attributes::new("")
   }
 }
 
 ///|
-fn layout_track(
-  track : @model.Track,
+/// local0/local1 are presentation offsets into the already-trimmed item.
+/// Add each composition's source start exactly once when descending.
+fn visit(
+  item : @model.Item,
+  local0 : Double,
+  local1 : Double,
   offset : Double,
-  clip0 : Double,
-  clip1 : Double,
   path : String,
   track_index : Int32,
-  enabled : Bool,
+  item_index : Int32,
+  parent_enabled : Bool,
   out : Array[Placement],
+  transitions : Array[TransitionPlacement],
 ) -> Result[Unit, String] {
-  let content = match track_duration(track) {
+  let attr = attributes(item)
+  let enabled = parent_enabled && attr.enabled
+  let scalar = match attr.playback_scalar() {
     Ok(v) => v
-    Err(e) => return Err(e)
+    Err(e) => return Err(e + ":" + path)
   }
-  let (w0, w1) = window(track.source_range, content)
-  let visible = match intersect(w0, w1, clip0, clip1) {
-    Some(v) => v
-    None => return Ok(())
+  let composition = match item {
+    @model.Track(t) => Some((t.children, t.source_range, true))
+    @model.Stack(s) => Some((s.children, s.source_range, false))
+    _ => None
   }
-  let (e0, e1) = visible
-  let mut cursor = 0.0
-  for i = 0; i < track.children.length(); i = i + 1 {
-    let child = track.children[i]
-    let duration = match item_duration(child) {
-      Ok(v) => v
-      Err(e) => return Err(e)
+  match composition {
+    None => {
+      let original = match source_range(item) {
+        Ok(v) => v
+        Err(e) => return Err(e)
+      }
+      let start = original.start().to_seconds().unwrap() + local0 * scalar
+      let source = match
+        range_of(start, local1 - local0, original.start().rate()) {
+        Ok(v) => v
+        Err(e) => return Err(e)
+      }
+      match finite(start + (local1 - local0) * scalar) {
+        Err(e) => return Err(e)
+        _ => ()
+      }
+      out.push({
+        path,
+        node: if item is @model.Clip(_) {
+          "clip"
+        } else {
+          "gap"
+        },
+        track_index,
+        item_index,
+        start_seconds: offset,
+        end_seconds: offset + local1 - local0,
+        source,
+        time_scalar: scalar,
+        enabled,
+      })
     }
-    let b0 = cursor
-    let b1 = cursor + duration
-    cursor = b1
-    let piece = match intersect(b0, b1, e0, e1) {
-      Some(v) => v
-      None => continue
-    }
-    let (v0, v1) = piece
-    let child_offset = offset + (v0 - e0)
-    let child_path = path + "/children/" + i.to_string()
-    let child_enabled = enabled && item_enabled(child)
-    match child {
-      @model.Stack(s) =>
-        match
-          layout_stack(
-            s,
-            child_offset,
-            v0 - b0,
-            v1 - b0,
-            child_path,
-            track_index,
-            child_enabled,
-            out,
-          ) {
-          Ok(_) => ()
-          Err(e) => return Err(e)
+    Some((children, window, sequential)) => {
+      if scalar != 1.0 {
+        return Err("unsupported_composition_retime:" + path)
+      }
+      match item {
+        @model.Track(t) => {
+          let problems = transition_issues(t)
+          if problems.length() > 0 {
+            return Err(
+              problems[0].code +
+              ":" +
+              path +
+              "/children/" +
+              problems[0].index.to_string(),
+            )
+          }
         }
-      @model.Track(t) =>
-        match
-          layout_track(
-            t,
-            child_offset,
-            v0 - b0,
-            v1 - b0,
-            child_path,
-            track_index,
-            child_enabled,
-            out,
-          ) {
-          Ok(_) => ()
-          Err(e) => return Err(e)
+        _ => ()
+      }
+      let w0 = match window {
+        Some(r) => r.start().to_seconds().unwrap()
+        None => 0.0
+      }
+      let e0 = w0 + local0
+      let e1 = w0 + local1
+      match finite(e1) {
+        Err(e) => return Err(e)
+        _ => ()
+      }
+      let mut cursor = 0.0
+      for i = 0; i < children.length(); i = i + 1 {
+        let child = children[i]
+        let child_path = path + "/children/" + i.to_string()
+        let index = if track_index < 0 { i } else { track_index }
+        match @model.transition_of(child) {
+          Err(e) => return Err(e + ":" + child_path)
+          Ok(Some(tr)) => {
+            if !sequential {
+              return Err("transition_requires_track:" + child_path)
+            }
+            let a = tr.in_offset.to_seconds().unwrap()
+            let b = tr.out_offset.to_seconds().unwrap()
+            let start = cursor - a
+            let end = cursor + b
+            for
+              point in [start, end, offset + (start - e0), offset + (end - e0)] {
+              match finite(point) {
+                Err(e) => return Err(e)
+                Ok(_) => ()
+              }
+            }
+            match intersect(start, end, e0, e1) {
+              Some((v0, v1)) =>
+                transitions.push({
+                  path: child_path,
+                  left_path: if i > 0 {
+                    Some(path + "/children/" + (i - 1).to_string())
+                  } else {
+                    None
+                  },
+                  right_path: if i + 1 < children.length() {
+                    Some(path + "/children/" + (i + 1).to_string())
+                  } else {
+                    None
+                  },
+                  start_seconds: offset + (start - e0),
+                  end_seconds: offset + (end - e0),
+                  cut_seconds: offset + (cursor - e0),
+                  visible_start_seconds: offset + (v0 - e0),
+                  visible_end_seconds: offset + (v1 - e0),
+                  in_seconds: a,
+                  out_seconds: b,
+                  enabled,
+                })
+              None => ()
+            }
+            continue
+          }
+          _ => ()
         }
-      @model.Opaque(raw) =>
-        if !(opaque_schema(raw) == "Transition.1") {
-          return Err("unsupported_item:" + child_path)
-        }
-      _ => {
-        let original = match source_range(child) {
+        let d = match duration_of(child) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
-        let shifted = match shift_range(original, v0 - b0) {
+        let b0 = if sequential { cursor } else { 0.0 }
+        let b1 = match finite(b0 + d) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
-        out.push({
-          path: child_path,
-          node: if child is @model.Clip(_) {
-            "clip"
-          } else {
-            "gap"
-          },
-          track_index,
-          item_index: i,
-          start_seconds: child_offset,
-          end_seconds: child_offset + (v1 - v0),
-          source: shifted,
-          enabled: child_enabled,
-        })
+        if sequential {
+          cursor = b1
+        }
+        match intersect(b0, b1, e0, e1) {
+          Some((v0, v1)) =>
+            match
+              visit(
+                child,
+                v0 - b0,
+                v1 - b0,
+                offset + (v0 - e0),
+                child_path,
+                index,
+                i,
+                enabled,
+                out,
+                transitions,
+              ) {
+              Err(e) => return Err(e)
+              _ => ()
+            }
+          None => ()
+        }
       }
     }
   }
@@ -280,131 +449,45 @@ fn layout_track(
 }
 
 ///|
-fn layout_stack(
-  stack : @model.Stack,
-  offset : Double,
-  clip0 : Double,
-  clip1 : Double,
-  path : String,
-  track_index : Int32,
-  enabled : Bool,
-  out : Array[Placement],
-) -> Result[Unit, String] {
-  let content = match stack_duration(stack) {
-    Ok(v) => v
-    Err(e) => return Err(e)
-  }
-  let (w0, w1) = window(stack.source_range, content)
-  let visible = match intersect(w0, w1, clip0, clip1) {
-    Some(v) => v
-    None => return Ok(())
-  }
-  let (e0, e1) = visible
-  for i = 0; i < stack.children.length(); i = i + 1 {
-    let child = stack.children[i]
-    let duration = match item_duration(child) {
-      Ok(v) => v
-      Err(e) => return Err(e)
-    }
-    let piece = match intersect(0.0, duration, e0, e1) {
-      Some(v) => v
-      None => continue
-    }
-    let (v0, v1) = piece
-    let child_offset = offset + (v0 - e0)
-    let child_path = path + "/children/" + i.to_string()
-    let index = if track_index < 0 { i } else { track_index }
-    let child_enabled = enabled &&
-      stack.attributes.enabled &&
-      item_enabled(child)
-    match child {
-      @model.Track(t) =>
-        match
-          layout_track(
-            t, child_offset, v0, v1, child_path, index, child_enabled, out,
-          ) {
-          Ok(_) => ()
-          Err(e) => return Err(e)
-        }
-      @model.Stack(s) =>
-        match
-          layout_stack(
-            s, child_offset, v0, v1, child_path, index, child_enabled, out,
-          ) {
-          Ok(_) => ()
-          Err(e) => return Err(e)
-        }
-      @model.Opaque(raw) =>
-        if !(opaque_schema(raw) == "Transition.1") {
-          return Err("unsupported_item:" + child_path)
-        }
-      _ => {
-        let original = match source_range(child) {
-          Ok(v) => v
-          Err(e) => return Err(e)
-        }
-        let shifted = match shift_range(original, v0) {
-          Ok(v) => v
-          Err(e) => return Err(e)
-        }
-        out.push({
-          path: child_path,
-          node: if child is @model.Clip(_) {
-            "clip"
-          } else {
-            "gap"
-          },
-          track_index: index,
-          item_index: i,
-          start_seconds: child_offset,
-          end_seconds: child_offset + (v1 - v0),
-          source: shifted,
-          enabled: child_enabled,
-        })
-      }
-    }
-  }
-  Ok(())
-}
-
-///|
-/// Recursive layout with composition trimming: each composition exposes the
-/// intersection of its `source_range` window and the window its parent sees.
 pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
-  let items : Array[Placement] = []
-  let durations : Array[Double] = []
-  let content = match stack_duration(t.tracks) {
+  let root = @model.Stack(t.tracks)
+  let duration = match duration_of(root) {
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let (w0, w1) = window(t.tracks.source_range, content)
-  for i = 0; i < t.tracks.children.length(); i = i + 1 {
-    let child = t.tracks.children[i]
-    let duration = match item_duration(child) {
+  let items : Array[Placement] = []
+  let transitions : Array[TransitionPlacement] = []
+  match
+    visit(root, 0.0, duration, 0.0, "/tracks", -1, -1, true, items, transitions) {
+    Err(e) => return Err(e)
+    _ => ()
+  }
+  let durations : Array[Double] = []
+  let w0 = match t.tracks.source_range {
+    Some(r) => r.start().to_seconds().unwrap()
+    None => 0.0
+  }
+  for child in t.tracks.children {
+    let d = match duration_of(child) {
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    let visible = match intersect(0.0, duration, w0, w1) {
-      Some(v) => v
-      None => (0.0, 0.0)
-    }
-    durations.push(visible.1 - visible.0)
+    durations.push(
+      match intersect(0.0, d, w0, w0 + duration) {
+        Some((a, b)) => b - a
+        None => 0.0
+      },
+    )
   }
-  match layout_stack(t.tracks, 0.0, w0, w1, "/tracks", -1, true, items) {
-    Ok(_) => ()
-    Err(e) => return Err(e)
-  }
-  Ok({ items, track_durations: durations, duration_seconds: w1 - w0, })
+  Ok({
+    items,
+    transitions,
+    track_durations: durations,
+    duration_seconds: duration,
+  })
 }
 
 ///|
-/// Public duration probe for callers that only need the span of one node.
-pub fn duration_of(item : @model.Item) -> Result[Double, String] {
-  item_duration(item)
-}
-
-///|
-/// Query half-open intervals; simultaneous tracks may return multiple items.
 pub fn Layout::items_at(
   self : Layout,
   seconds : Double,
@@ -420,18 +503,35 @@ pub fn Layout::items_at(
 }
 
 ///|
-/// Translate a track position into the original media coordinate.
+pub fn Layout::transitions_at(
+  self : Layout,
+  seconds : Double,
+) -> Result[Array[TransitionPlacement], String] {
+  if seconds.is_nan() || seconds.is_inf() {
+    return Err("invalid_query_time")
+  }
+  Ok(
+    self.transitions.filter(fn(p) {
+      seconds >= p.visible_start_seconds && seconds < p.visible_end_seconds
+    }),
+  )
+}
+
+///|
+/// Playback mapping; OTIO's structural transformed_time ignores TimeEffects.
 pub fn Placement::source_at(
   self : Placement,
   seconds : Double,
 ) -> Result[@time.RationalTime, String] {
   if seconds.is_nan() ||
+    seconds.is_inf() ||
     seconds < self.start_seconds ||
     seconds >= self.end_seconds {
     return Err("outside_item")
   }
   let start = self.source.start()
-  let value = start.value() + (seconds - self.start_seconds) * start.rate()
+  let value = start.value() +
+    (seconds - self.start_seconds) * start.rate() * self.time_scalar
   match @time.RationalTime::new(value, start.rate()) {
     Ok(t) => Ok(t)
     Err(_) => Err("source_overflow")

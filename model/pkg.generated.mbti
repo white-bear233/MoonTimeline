@@ -7,6 +7,9 @@ import {
 }
 
 // Values
+pub fn schema_name(Json) -> String
+
+pub fn transition_of(Item) -> Result[Transition?, String]
 
 // Errors
 
@@ -19,6 +22,7 @@ pub(all) struct Attributes {
   extra : Json
 }
 pub fn Attributes::new(String) -> Self
+pub fn Attributes::playback_scalar(Self) -> Result[Double, String]
 
 pub(all) struct Clip {
   attributes : Attributes
@@ -27,6 +31,7 @@ pub(all) struct Clip {
   active_media_reference_key : String
 }
 pub fn Clip::active_media(Self) -> Result[MediaReference, String]
+pub fn Clip::check_media_bounds(Self, Double, Double) -> Result[Unit, String]
 pub fn Clip::effective_range(Self) -> Result[@range.TimeRange, String]
 
 pub(all) struct Gap {
@@ -41,6 +46,7 @@ pub(all) enum Item {
   Track(Track)
   Opaque(Json)
 }
+pub fn Item::playback_scalar(Self) -> Result[Double, String]
 
 pub(all) enum MediaKind {
   External(String)
@@ -81,6 +87,11 @@ pub(all) struct Track {
 pub(all) enum TrackKind {
   Video
   Audio
+}
+
+pub(all) struct Transition {
+  in_offset : @time.RationalTime
+  out_offset : @time.RationalTime
 }
 
 // Type aliases

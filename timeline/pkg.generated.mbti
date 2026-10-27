@@ -22,15 +22,21 @@ pub fn path_of(Array[Int32]) -> String
 
 pub fn source_range(@model.Item) -> Result[@range.TimeRange, String]
 
+pub fn transition_issues(@model.Track) -> Array[TransitionIssue]
+
+pub fn transition_range(@model.Track, Int32) -> Result[@range.TimeRange, String]
+
 // Errors
 
 // Types and methods
 pub(all) struct Layout {
   items : Array[Placement]
+  transitions : Array[TransitionPlacement]
   track_durations : Array[Double]
   duration_seconds : Double
 }
 pub fn Layout::items_at(Self, Double) -> Result[Array[Placement], String]
+pub fn Layout::transitions_at(Self, Double) -> Result[Array[TransitionPlacement], String]
 
 pub(all) struct Placement {
   path : String
@@ -40,9 +46,29 @@ pub(all) struct Placement {
   start_seconds : Double
   end_seconds : Double
   source : @range.TimeRange
+  time_scalar : Double
   enabled : Bool
 }
 pub fn Placement::source_at(Self, Double) -> Result[@time.RationalTime, String]
+
+pub(all) struct TransitionIssue {
+  index : Int32
+  code : String
+}
+
+pub(all) struct TransitionPlacement {
+  path : String
+  left_path : String?
+  right_path : String?
+  start_seconds : Double
+  end_seconds : Double
+  cut_seconds : Double
+  visible_start_seconds : Double
+  visible_end_seconds : Double
+  in_seconds : Double
+  out_seconds : Double
+  enabled : Bool
+}
 
 // Type aliases
 

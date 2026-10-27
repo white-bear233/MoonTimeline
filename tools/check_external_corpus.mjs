@@ -2,7 +2,7 @@
 // Verify the reader against OpenTimelineIO's own sample corpus.
 // Files are downloaded from a pinned upstream tag so results are reproducible.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, mkdtempSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -44,31 +44,37 @@ function inspect(file) {
   return { ok: r.status === 0, body, stderr: (r.stderr || '').trim() };
 }
 
-const scratch = join(tmpdir(), 'moontimeline-corpus', 'roundtrip');
-rmSync(scratch, { recursive: true, force: true });
-mkdirSync(scratch, { recursive: true });
+const scratch = mkdtempSync(join(tmpdir(), 'moontimeline-roundtrip-'));
+// OTIO permits special numeric tokens; we currently reject instead of losing data.
+const expectedReadFailures = new Set(['big_int.otio']);
 
 const rows = [];
 let readable = 0, computable = 0, writable = 0, identical = 0;
 for (const name of files) {
   const file = join(cache, name);
   const first = inspect(file);
-  const row = { file: name, read: first.ok, compute: false, write: false, same: false, note: '' };
+  const row = { file: name, read: first.ok, compute: false, write: false, same: false, note: '', expectedRejection: false };
   if (!first.ok) {
     row.note = first.stderr || 'unreadable';
+    row.expectedRejection = expectedReadFailures.has(name) && row.note.includes('invalid_json');
     rows.push(row);
     continue;
   }
   readable += 1;
   row.compute = first.body && first.body.duration !== null && !first.body.layout_error;
   if (row.compute) computable += 1;
+  row.note = first.body?.layout_error || '';
+  const expectedCompute = name !== 'nested_example.otio';
+  if (row.compute !== expectedCompute || (!expectedCompute && !row.note.startsWith('unsupported_composition_retime:'))) {
+    throw new Error(`${name}: unexpected computation status: ${row.note}`);
+  }
   const out = join(scratch, `${name}.out.otio`);
   const write = spawnSync(process.execPath, ['cmd/moontimeline.mjs', 'export', file, '--output', out], { cwd: root, encoding: 'utf8' });
   row.write = write.status === 0 && existsSync(out);
   if (row.write) {
     writable += 1;
     const second = inspect(out);
-    row.same = second.ok && second.body.duration === first.body.duration && (second.body.items || []).length === (first.body.items || []).length;
+    row.same = second.ok && JSON.stringify(second.body) === JSON.stringify(first.body);
     if (row.same) identical += 1;
   }
   rows.push(row);
@@ -82,4 +88,5 @@ for (const r of rows) {
 }
 console.log(`\nreadable ${readable}/${files.length}  computable ${computable}/${files.length}  writable ${writable}/${files.length}  stable ${identical}/${files.length}`);
 
-if (readable !== files.length) process.exit(1);
+if (rows.some(r => r.read ? (!r.write || !r.same) : !r.expectedRejection)) process.exit(1);
+console.log('Read/write preservation gate passed; compute means layout returned, not full conformance.');

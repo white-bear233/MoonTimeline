@@ -21,17 +21,7 @@ test "legacy Clip.1 and Sequence.1 are upgraded on write" {
 }
 
 ///|
-test "nonfinite metadata literals are coerced, strings are untouched" {
+test "nonfinite metadata is rejected instead of silently replaced with null" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {\"a\": Inf, \"b\": -Infinity, \"c\": NaN, \"s\": \"Inf\"}, \"name\": \"n\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
-  let timeline = @otio.read(source).unwrap()
-  match timeline.metadata {
-    Object(m) => {
-      assert_true(m["a"] is Null)
-      assert_true(m["b"] is Null)
-      assert_true(m["c"] is Null)
-      assert_true(m["s"] is String("Inf"))
-    }
-    _ => fail("Expected metadata object")
-  }
-  assert_true(@otio.write(timeline) is Ok(_))
+  assert_true(@otio.read(source) is Err(_))
 }

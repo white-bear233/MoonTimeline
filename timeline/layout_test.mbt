@@ -79,11 +79,12 @@ test "mixed rates disabled items and global labels do not shift layout" {
 }
 
 ///|
-test "transition keeps the cursor and stays out of placements" {
+test "boundary transition contributes its tail to available duration" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {}, \"name\": \"t\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": [{\"OTIO_SCHEMA\": \"Track.1\", \"metadata\": {}, \"name\": \"V1\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"kind\": \"Video\", \"children\": [{\"OTIO_SCHEMA\": \"Gap.1\", \"metadata\": {}, \"name\": \"\", \"source_range\": {\"OTIO_SCHEMA\": \"TimeRange.1\", \"duration\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 48.0}, \"start_time\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 0.0}}, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null}, {\"OTIO_SCHEMA\": \"Transition.1\", \"metadata\": {}, \"name\": \"t0\", \"transition_type\": \"SMPTE_Dissolve\", \"in_offset\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 10.0}, \"out_offset\": {\"OTIO_SCHEMA\": \"RationalTime.1\", \"rate\": 24.0, \"value\": 10.0}}]}]}}"
   let timeline = @otio.read(source).unwrap()
   let l = @timeline.layout(timeline).unwrap()
-  assert_eq(l.duration_seconds, 2.0)
+  assert_true((l.duration_seconds - (2.0 + 10.0 / 24.0)).abs() < 0.000001)
+  assert_eq(l.transitions.length(), 1)
   assert_eq(l.items.length(), 1)
 }
 

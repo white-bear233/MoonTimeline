@@ -1,7 +1,25 @@
-# 布局与查询（第 8 步）
+# 布局、转场与播放坐标（0.1.3）
 
-`timeline.layout` 计算每个片段的轨道起止秒数、素材范围、启用状态和轨道时长。
-轨道顺序累加，Stack 总时长取最大值。global_start_time 是显示标签，不偏移局部布局。
-禁用对象仍占结构时间，通过 enabled 标识；items_at 返回包含禁用对象在内的所有结构命中。
-查询采用半开区间，零长度片段不命中。source_at 将轨道位置映射到素材内位置。
-未知时长、数值溢出返回错误，不猜测零时长。结果仅是结构布局，不实现合成遮挡或播放。
+`timeline.layout` 返回叶片段 items、转场 transitions、轨道时长和总时长。Track 顺序排布，Stack 同时排布；每层 source_range 起点分别计入坐标转换。global_start_time 是显示标签，不偏移局部布局。禁用对象仍占结构时间并携带 enabled。
+
+## 转场
+
+- `model.transition_of` 为保留的 Transition.1 提供经过验证的类型视图；offset 必须有限、非负、帧率为正。
+- 剪切点为 C，完整范围为 `[C-in_offset, C+out_offset)`，自身时长为两者之和。内部转场不推进 Track 游标，不能说它“零时长”。
+- `timeline.transition_range(track,index)` 给出未裁剪的 Track 坐标范围；Layout 中记录转换后的完整范围、可见范围、cut、左右邻居路径。窗口外部分不参与 transitions_at 查询。
+- 首尾转场可以有隐式 Gap 邻居，路径为 None；按上游 Track.available_range，首部 in_offset、尾部 out_offset 计入可用时长，range_of_child 的游标仍从零起。这两套规则分别测试，不把所有子项平移。
+- `transition_issues` 检查连续转场、邻居长度、同片段两端转场重叠；零时长 Gap 淡入淡出是允许的例外。转场必须位于 Track，Stack 没有顺序邻接语义。
+
+## 变速
+
+片段展示时长仍为 source_range.duration。播放映射：
+
+`media_seconds = source_start_seconds + (timeline_seconds - placement_start_seconds) * time_scalar`
+
+支持单个 LinearTimeWarp.1（正向、慢放、负数倒放、零速）或 FreezeFrame.1（0）。倒放以 source_range.start_time 为第一个素材位置；例如起点 10 秒、倍率 -1，播放 1.5 秒后访问 8.5 秒。定格始终访问起点；不将时长除以倍率。多个时间效果的顺序不明确，返回 ambiguous_time_effects；视觉 Effect.1 保留但不改坐标；未知效果拒绝求值。
+
+Placement.source.start 是可见部分的素材起点，duration 是展示时长，不能把 source.end_seconds 当作变速后的素材末端。time_scalar 与 source_at 才表示播放映射。OTIO 的 transformed_time 是不计算效果的结构坐标变换，播放映射是本库明确约定的扩展，不假称二者相同。
+
+组合自身变速尚未实现，返回 unsupported_composition_retime，不当作 1 倍速。未知时长、溢出也返回错误。
+
+items_at、transitions_at、Placement.source_at 使用半开区间；转场和片段分别查询，不提供混合像素或渲染。零时长对象不命中时间点查询。

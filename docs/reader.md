@@ -1,4 +1,4 @@
-# OTIO JSON 读取（第 6 步，0.1.1 修订）
+# OTIO JSON 读取（0.1.3 修订）
 
 `otio.read(source)` 返回 `Result[model.Timeline, Diagnostic]`。
 Diagnostic 包含 code、path、message；path 使用 JSON Pointer，根为 ""，键中的 ~ 和 / 分别转义为 ~0、~1。
@@ -21,7 +21,7 @@ Diagnostic 包含 code、path、message；path 使用 JSON Pointer，根为 ""�
 - metadata 必须是对象，内部可保存任意 JSON；name/metadata 为 null 时按空值处理并原样写回。
 - 输入上限 1600 万字符串代码单元，JSON 嵌套上限 64，拒绝重复键。
 - 时间值必须有限、帧率为正、时长非负；溢出区间被拒绝。
-- 非有限字面量（`Inf`、`-Infinity`、`NaN`）在严格解析失败后按 `null` 重试，字符串内容不受影响。
+- 非有限字面量（`Inf`、`-Infinity`、`NaN`）明确返回 invalid_json。OTIO 允许它们，但本库暂未支持无损表示，不能以 null 替代后假称保留。字符串内容不受影响。
 
 错误码：invalid_json、input_limit、type、missing_field、unsupported_schema、
 invalid_time、invalid_range、missing_media。

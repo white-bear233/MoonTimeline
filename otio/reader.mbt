@@ -419,86 +419,6 @@ fn timeline(j : Json) -> @model.Timeline raise Decode {
 }
 
 ///|
-fn is_word_char(c : Char) -> Bool {
-  (c >= 'a' && c <= 'z') ||
-  (c >= 'A' && c <= 'Z') ||
-  (c >= '0' && c <= '9') ||
-  c == '_'
-}
-
-///|
-fn matches_at(chars : Array[Char], i : Int32, token : String) -> Bool {
-  let t = token.to_array()
-  if i + t.length() > chars.length() {
-    return false
-  }
-  for k = 0; k < t.length(); k = k + 1 {
-    if chars[i + k] != t[k] {
-      return false
-    }
-  }
-  true
-}
-
-///|
-/// Python's json module writes Infinity and NaN by default, so real OTIO exports
-/// can contain them. JSON cannot represent those values, so the literal becomes
-/// null; the rest of the document still reads. Strings are left untouched.
-fn coerce_nonfinite(source : String) -> String {
-  let chars = source.to_array()
-  let n = chars.length()
-  let out = StringBuilder()
-  let mut i = 0
-  let mut in_string = false
-  while i < n {
-    let c = chars[i]
-    if in_string {
-      out.write_char(c)
-      if c == '\\' && i + 1 < n {
-        out.write_char(chars[i + 1])
-        i = i + 2
-        continue
-      }
-      if c == '"' {
-        in_string = false
-      }
-      i = i + 1
-      continue
-    }
-    if c == '"' {
-      in_string = true
-      out.write_char(c)
-      i = i + 1
-      continue
-    }
-    if i == 0 || !is_word_char(chars[i - 1]) {
-      let token = if matches_at(chars, i, "-Infinity") {
-        "-Infinity"
-      } else if matches_at(chars, i, "Infinity") {
-        "Infinity"
-      } else if matches_at(chars, i, "Inf") {
-        "Inf"
-      } else if matches_at(chars, i, "NaN") {
-        "NaN"
-      } else {
-        ""
-      }
-      if token != "" {
-        let after = i + token.to_array().length()
-        if after >= n || !is_word_char(chars[after]) {
-          out.write_string("null")
-          i = after
-          continue
-        }
-      }
-    }
-    out.write_char(c)
-    i = i + 1
-  }
-  out.to_string()
-}
-
-///|
 /// Parse OTIO. Unknown nodes are preserved instead of rejected; paths are JSON
 /// Pointers and the root is "".
 pub fn read(source : String) -> Result[@model.Timeline, Diagnostic] {
@@ -514,19 +434,8 @@ pub fn read(source : String) -> Result[@model.Timeline, Diagnostic] {
     max_nesting_depth=64,
     reject_duplicate_keys=true,
   ) catch {
-    _ =>
-      @json.parse(
-        coerce_nonfinite(source),
-        max_nesting_depth=64,
-        reject_duplicate_keys=true,
-      ) catch {
-        error =>
-          return Err({
-            code: "invalid_json",
-            path: "",
-            message: error.to_string(),
-          })
-      }
+    error =>
+      return Err({ code: "invalid_json", path: "", message: error.to_string(), })
   }
   Ok(timeline(parsed)) catch {
     Decode(error) => Err(error)

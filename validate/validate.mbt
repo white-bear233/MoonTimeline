@@ -35,6 +35,20 @@ fn walk_stack(
   path : String,
   issues : Array[Issue],
 ) -> Unit {
+  check_attributes(stack.attributes, true, path, issues)
+  for i = 0; i < stack.children.length(); i = i + 1 {
+    match @model.transition_of(stack.children[i]) {
+      Ok(Some(_)) =>
+        push(
+          issues,
+          "transition_requires_track",
+          Error,
+          path + "/children/" + i.to_string(),
+          "Transitions require sequential Track neighbors",
+        )
+      _ => ()
+    }
+  }
   if stack.source_range is Some(_) {
     push(
       issues,
@@ -66,6 +80,76 @@ fn walk_track(
   path : String,
   issues : Array[Issue],
 ) -> Unit {
+  check_attributes(track.attributes, true, path, issues)
+  for problem in @timeline.transition_issues(track) {
+    push(
+      issues,
+      problem.code,
+      Error,
+      path + "/children/" + problem.index.to_string(),
+      "Invalid transition offsets or adjacent item constraints",
+    )
+  }
+  for i = 0; i < track.children.length(); i = i + 1 {
+    let child_path = path + "/children/" + i.to_string()
+    let head = if i > 0 {
+      match @model.transition_of(track.children[i - 1]) {
+        Ok(Some(t)) => t.in_offset.to_seconds().unwrap()
+        _ => 0.0
+      }
+    } else {
+      0.0
+    }
+    let tail = if i + 1 < track.children.length() {
+      match @model.transition_of(track.children[i + 1]) {
+        Ok(Some(t)) => t.out_offset.to_seconds().unwrap()
+        _ => 0.0
+      }
+    } else {
+      0.0
+    }
+    if head > 0.0 || tail > 0.0 {
+      match track.children[i] {
+        @model.Clip(c) =>
+          match c.check_media_bounds(head, tail) {
+            Err("source_out_of_bounds") =>
+              push(
+                issues,
+                "insufficient_transition_handles",
+                Error,
+                child_path,
+                "Playback-mapped transition handles exceed active media availability",
+              )
+            Err("unknown_available_range") =>
+              push(
+                issues,
+                "unknown_transition_handles",
+                Warning,
+                child_path,
+                "Media availability is unknown; transition handles cannot be verified",
+              )
+            Err("source_overflow") =>
+              push(
+                issues,
+                "source_overflow",
+                Error,
+                child_path,
+                "Transition media mapping overflow",
+              )
+            _ => ()
+          }
+        @model.Track(_) | @model.Stack(_) =>
+          push(
+            issues,
+            "unknown_transition_handles",
+            Warning,
+            child_path,
+            "Nested composition transition handles require recursive media verification; not verified yet",
+          )
+        _ => ()
+      }
+    }
+  }
   if track.source_range is Some(_) {
     push(
       issues,
@@ -83,6 +167,11 @@ fn walk_track(
 ///|
 fn walk_item(item : @model.Item, path : String, issues : Array[Issue]) -> Unit {
   match item {
+    @model.Clip(c) => check_attributes(c.attributes, false, path, issues)
+    @model.Gap(g) => check_attributes(g.attributes, false, path, issues)
+    _ => ()
+  }
+  match item {
     @model.Stack(s) => walk_stack(s, path, issues)
     @model.Track(t) => walk_track(t, path, issues)
     @model.Opaque(raw) => {
@@ -90,10 +179,10 @@ fn walk_item(item : @model.Item, path : String, issues : Array[Issue]) -> Unit {
       if tag == "Transition.1" {
         push(
           issues,
-          "opaque_transition",
+          "transition",
           Info,
           path,
-          "Transition preserved verbatim; treated as zero duration",
+          "Transition range is computed without advancing the Track cursor",
         )
       } else {
         push(
@@ -169,21 +258,25 @@ fn walk_item(item : @model.Item, path : String, issues : Array[Issue]) -> Unit {
                 path + "/media_references",
                 "Media bounds cannot be verified",
               )
-            Some(available) =>
-              match c.effective_range() {
-                Err(_) => ()
-                Ok(source) =>
-                  if source.start().to_seconds().unwrap() <
-                    available.start().to_seconds().unwrap() ||
-                    source.end_seconds() > available.end_seconds() {
-                    push(
-                      issues,
-                      "source_out_of_bounds",
-                      Error,
-                      path + "/source_range",
-                      "Source range exceeds active media availability",
-                    )
-                  }
+            Some(_) =>
+              match c.check_media_bounds(0.0, 0.0) {
+                Err("source_out_of_bounds") =>
+                  push(
+                    issues,
+                    "source_out_of_bounds",
+                    Error,
+                    path + "/source_range",
+                    "Playback-mapped source exceeds active media availability",
+                  )
+                Err("source_overflow") =>
+                  push(
+                    issues,
+                    "source_overflow",
+                    Error,
+                    path + "/source_range",
+                    "Playback source overflow",
+                  )
+                _ => ()
               }
           }
         }
@@ -210,15 +303,73 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
   walk_stack(t.tracks, "/tracks", issues)
   match @timeline.layout(t) {
     Err(e) =>
-      if e == "layout_overflow" {
+      if !e.has_prefix("unknown_duration:") {
         issues.push({
-          code: "layout_overflow",
+          code: "layout_error",
           severity: Error,
           path: "/tracks",
-          message: "Timeline duration cannot be represented",
+          message: e,
         })
       }
     Ok(_) => ()
   }
   issues
+}
+
+///|
+fn check_attributes(
+  attr : @model.Attributes,
+  composition : Bool,
+  path : String,
+  issues : Array[Issue],
+) -> Unit {
+  match attr.playback_scalar() {
+    Err(e) =>
+      push(
+        issues,
+        e,
+        Error,
+        path + "/effects",
+        "Effects are preserved but cannot be evaluated safely",
+      )
+    Ok(n) =>
+      if composition && n != 1.0 {
+        push(
+          issues,
+          "unsupported_composition_retime",
+          Error,
+          path + "/effects",
+          "Composition retiming is not implemented; editing is refused",
+        )
+      }
+  }
+  match attr.extra {
+    Object(o) =>
+      match o.get("markers") {
+        Some(Array(markers)) =>
+          for i = 0; i < markers.length(); i = i + 1 {
+            match markers[i] {
+              Object(_) => ()
+              _ =>
+                push(
+                  issues,
+                  "invalid_marker",
+                  Error,
+                  path + "/markers/" + i.to_string(),
+                  "Marker must be an object; input retained unchanged",
+                )
+            }
+          }
+        None => ()
+        _ =>
+          push(
+            issues,
+            "invalid_markers",
+            Error,
+            path + "/markers",
+            "Markers must be an array; input retained unchanged",
+          )
+      }
+    _ => ()
+  }
 }

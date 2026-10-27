@@ -1,0 +1,9 @@
+import {
+  "white-bear233/moontimeline/model",
+  "white-bear233/moontimeline/time",
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/otio",
+  "white-bear233/moontimeline/timeline",
+  "white-bear233/moontimeline/validate",
+  "white-bear233/moontimeline/edit",
+} for "test"

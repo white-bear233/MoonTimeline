@@ -95,11 +95,11 @@ fn transition_source() -> String {
 }
 
 ///|
-test "preserved transition is informational" {
+test "computed transition is informational" {
   let timeline = @otio.read(transition_source()).unwrap()
   let issues = @validate.validate(timeline)
   assert_true(!@validate.has_errors(issues))
-  assert_true(issues.any(fn(i) { i.code == "opaque_transition" }))
+  assert_true(issues.any(fn(i) { i.code == "transition" }))
 }
 
 ///|

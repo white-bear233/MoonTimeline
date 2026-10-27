@@ -27,7 +27,10 @@ test('invalid input and arguments exit 2',()=>{
 test('preserved transition stays readable',()=>{
  const r=cli('inspect','fixtures/unsupported/transition.otio');assert.equal(r.status,0,r.stderr||r.stdout);
  const body=JSON.parse(r.stdout);assert.equal(body.duration,4);
- assert.ok(body.issues.some(i=>i.code==='opaque_transition'));
+ assert.ok(body.issues.some(i=>i.code==='transition'));
+ assert.equal(body.transitions.length,1);
+ assert.ok(Math.abs(body.transitions[0].start-1.5)<1e-10);
+ assert.ok(Math.abs(body.transitions[0].end-2.5)<1e-10);
 });
 
 test('path addressing edits items and tracks',()=>{

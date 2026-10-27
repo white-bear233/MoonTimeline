@@ -67,9 +67,33 @@ fn describe(t : @model.Timeline) -> Json {
       o["duration"] = Json::null()
       o["layout_error"] = Json::string(e)
       o["items"] = Json::array([])
+      o["transitions"] = Json::array([])
     }
     Ok(l) => {
       o["duration"] = Json::number(l.duration_seconds)
+      o["transitions"] = Json::array(
+        l.transitions.map(fn(p) {
+          Json::object({
+            "path": Json::string(p.path),
+            "left_path": match p.left_path {
+              Some(s) => Json::string(s)
+              None => Json::null()
+            },
+            "right_path": match p.right_path {
+              Some(s) => Json::string(s)
+              None => Json::null()
+            },
+            "start": Json::number(p.start_seconds),
+            "end": Json::number(p.end_seconds),
+            "cut": Json::number(p.cut_seconds),
+            "visible_start": Json::number(p.visible_start_seconds),
+            "visible_end": Json::number(p.visible_end_seconds),
+            "in_offset": Json::number(p.in_seconds),
+            "out_offset": Json::number(p.out_seconds),
+            "enabled": Json::boolean(p.enabled),
+          })
+        }),
+      )
       o["items"] = Json::array(
         l.items.map(fn(p) {
           let name = match @timeline.indices_of(p.path) {
@@ -96,6 +120,7 @@ fn describe(t : @model.Timeline) -> Json {
             "start": Json::number(p.start_seconds),
             "end": Json::number(p.end_seconds),
             "source_start": Json::number(p.source.start().to_seconds().unwrap()),
+            "time_scalar": Json::number(p.time_scalar),
             "enabled": Json::boolean(p.enabled),
           })
         }),

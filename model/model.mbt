@@ -1,6 +1,6 @@
 ///|
 /// Common OTIO fields. Metadata is retained as arbitrary JSON.
-/// `extra` keeps fields outside the computed subset so a read-write round trip
+/// `extra` retains fields without changing their JSON representation so a round trip
 /// does not drop upstream data (markers, effects, vendor extensions).
 pub(all) struct Attributes {
   name : String
@@ -87,7 +87,8 @@ pub(all) enum Item {
   Gap(Gap)
   Stack(Stack)
   Track(Track)
-  /// Preserved verbatim (for example Transition.1) but not part of the computed subset.
+  /// Preserved verbatim. Transition.1 has a typed semantic view via transition_of;
+  /// other unknown items cannot yet be evaluated.
   Opaque(Json)
 }
 
