@@ -6,18 +6,36 @@ import {
 }
 
 // Values
+pub fn from_start_end(@time.RationalTime, @time.RationalTime, inclusive? : Bool) -> Result[TimeRange, String]
 
 // Errors
 
 // Types and methods
+pub(all) enum Relation {
+  Contains
+  Overlaps
+  Before
+  Meets
+  Begins
+  Finishes
+  Intersects
+  Equal
+} derive(Eq)
+
 pub struct TimeRange {
   // private fields
 }
+pub fn TimeRange::clamp_time(Self, @time.RationalTime) -> Result[@time.RationalTime, String]
 pub fn TimeRange::contains(Self, @time.RationalTime) -> Result[Bool, String]
 pub fn TimeRange::duration(Self) -> @time.RationalTime
+pub fn TimeRange::duration_extended_by(Self, @time.RationalTime) -> Result[Self, String]
 pub fn TimeRange::end_seconds(Self) -> Double
+pub fn TimeRange::end_time_exclusive(Self) -> Result[@time.RationalTime, String]
+pub fn TimeRange::end_time_inclusive(Self) -> Result[@time.RationalTime, String]
+pub fn TimeRange::extended_by(Self, Self) -> Result[Self, String]
 pub fn TimeRange::intersection(Self, Self) -> Result[Self?, String]
 pub fn TimeRange::new(@time.RationalTime, @time.RationalTime) -> Result[Self, String]
+pub fn TimeRange::relates(Self, Self, Relation, epsilon? : Double) -> Bool
 pub fn TimeRange::start(Self) -> @time.RationalTime
 pub fn TimeRange::trimmed_to(Self, Self) -> Result[Self?, String]
 

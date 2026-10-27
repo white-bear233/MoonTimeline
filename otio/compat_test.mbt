@@ -21,7 +21,12 @@ test "legacy Clip.1 and Sequence.1 are upgraded on write" {
 }
 
 ///|
-test "nonfinite metadata is rejected instead of silently replaced with null" {
+test "nonfinite metadata roundtrips without null coercion" {
   let source = "{\"OTIO_SCHEMA\": \"Timeline.1\", \"metadata\": {\"a\": Inf, \"b\": -Infinity, \"c\": NaN, \"s\": \"Inf\"}, \"name\": \"n\", \"global_start_time\": null, \"tracks\": {\"OTIO_SCHEMA\": \"Stack.1\", \"metadata\": {}, \"name\": \"tracks\", \"source_range\": null, \"effects\": [], \"markers\": [], \"enabled\": true, \"color\": null, \"children\": []}}"
-  assert_true(@otio.read(source) is Err(_))
+  let t = @otio.read(source).unwrap()
+  let result = @otio.write(t).unwrap()
+  assert_true(result.contains("NaN"))
+  assert_true(result.contains("Inf"))
+  assert_true(!result.contains("\"a\":null"))
+  assert_true(@otio.read(result) is Ok(_))
 }

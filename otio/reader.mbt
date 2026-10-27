@@ -429,13 +429,9 @@ pub fn read(source : String) -> Result[@model.Timeline, Diagnostic] {
       message: "Input exceeds 16 million UTF-16 code units",
     })
   }
-  let parsed = @json.parse(
-    source,
-    max_nesting_depth=64,
-    reject_duplicate_keys=true,
-  ) catch {
-    error =>
-      return Err({ code: "invalid_json", path: "", message: error.to_string(), })
+  let parsed = match @otiojson.parse(source) {
+    Ok(j) => j
+    Err(e) => return Err({ code: "invalid_json", path: "", message: e, })
   }
   Ok(timeline(parsed)) catch {
     Decode(error) => Err(error)

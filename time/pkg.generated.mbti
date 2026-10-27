@@ -6,6 +6,17 @@ import {
 }
 
 // Values
+pub fn duration_from_start_end_time(RationalTime, RationalTime, inclusive? : Bool) -> Result[RationalTime, TimeError]
+
+pub fn from_seconds(Double, rate? : Double) -> Result[RationalTime, TimeError]
+
+pub fn from_timecode(String, Double) -> Result[RationalTime, TimeError]
+
+pub fn is_smpte_timecode_rate(Double) -> Bool
+
+pub fn nearest_smpte_timecode_rate(Double) -> Result[Double, TimeError]
+
+pub fn smpte_rates() -> Array[Double]
 
 // Errors
 
@@ -13,12 +24,21 @@ import {
 pub struct RationalTime {
   // private fields
 } derive(@debug.Debug)
+pub fn RationalTime::add(Self, Self) -> Result[Self, TimeError]
+pub fn RationalTime::almost_equal(Self, Self, delta? : Double) -> Bool
+pub fn RationalTime::ceil(Self) -> Self
+pub fn RationalTime::compare(Self, Self) -> Result[Int32, TimeError]
+pub fn RationalTime::floor(Self) -> Self
+pub fn RationalTime::multiply(Self, Double) -> Result[Self, TimeError]
 pub fn RationalTime::new(Double, Double) -> Result[Self, TimeError]
 pub fn RationalTime::rate(Self) -> Double
 pub fn RationalTime::rescaled_to(Self, Double) -> Result[Self, TimeError]
 pub fn RationalTime::rounded_frames(Self, Double, Rounding) -> Result[Double, TimeError]
+pub fn RationalTime::subtract(Self, Self) -> Result[Self, TimeError]
+pub fn RationalTime::to_frames(Self, rate? : Double) -> Result[Double, TimeError]
 pub fn RationalTime::to_repr(Self) -> @debug.Repr
 pub fn RationalTime::to_seconds(Self) -> Result[Double, TimeError]
+pub fn RationalTime::to_timecode(Self, rate? : Double, drop_frame? : Bool?) -> Result[String, TimeError]
 pub fn RationalTime::value(Self) -> Double
 
 pub(all) enum Rounding {

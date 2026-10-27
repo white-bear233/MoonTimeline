@@ -1,6 +1,7 @@
 import {
   "white-bear233/moontimeline/model",
   "white-bear233/moontimeline/time",
+  "white-bear233/moontimeline/transform",
   "white-bear233/moontimeline/range",
   "white-bear233/moontimeline/otio",
   "white-bear233/moontimeline/timeline",

@@ -2,6 +2,10 @@ import {
   "white-bear233/moontimeline/time",
   "white-bear233/moontimeline/range",
   "white-bear233/moontimeline/model",
-  "moonbitlang/core/json",
+  "white-bear233/moontimeline/otiojson",
   "moonbitlang/core/debug",
 }
+
+import {
+  "moonbitlang/core/json",
+} for "test"

@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/otiojson"
+
+// Values
+pub fn clone(Json) -> Result[Json, String]
+
+pub fn equivalent(Json, Json) -> Bool
+
+pub fn parse(String) -> Result[Json, String]
+
+pub fn stringify(Json) -> Result[String, String]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

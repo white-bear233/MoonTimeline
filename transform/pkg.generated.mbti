@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/transform"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct TimeTransform {
+  offset : @time.RationalTime
+  scale : Double
+  rate : Double
+}
+pub fn TimeTransform::apply_range(Self, @range.TimeRange) -> Result[@range.TimeRange, String]
+pub fn TimeTransform::apply_time(Self, @time.RationalTime) -> Result[@time.RationalTime, String]
+pub fn TimeTransform::apply_transform(Self, Self) -> Result[Self, String]
+pub fn TimeTransform::compose(Self, Self) -> Result[Self, String]
+pub fn TimeTransform::inverse(Self) -> Result[Self, String]
+pub fn TimeTransform::new(offset? : @time.RationalTime, scale? : Double, rate? : Double) -> Result[Self, String]
+
+// Type aliases
+
+// Traits

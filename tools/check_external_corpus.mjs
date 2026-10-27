@@ -45,8 +45,8 @@ function inspect(file) {
 }
 
 const scratch = mkdtempSync(join(tmpdir(), 'moontimeline-roundtrip-'));
-// OTIO permits special numeric tokens; we currently reject instead of losing data.
-const expectedReadFailures = new Set(['big_int.otio']);
+// OTIO numeric extensions now roundtrip without coercion.
+const expectedReadFailures = new Set();
 
 const rows = [];
 let readable = 0, computable = 0, writable = 0, identical = 0;

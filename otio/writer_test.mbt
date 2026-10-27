@@ -22,7 +22,7 @@ test "roundtrip preserves complete fixture JSON" {
 }
 
 ///|
-test "writer rejects invalid models and nonfinite metadata" {
+test "writer rejects invalid models and preserves nonfinite metadata" {
   let t = sample()
   let invalid : @model.Timeline = { ..t, metadata: Json::array([]), }
   assert_true(@otio.write(invalid) is Err(_))
@@ -30,7 +30,7 @@ test "writer rejects invalid models and nonfinite metadata" {
     ..t,
     metadata: Json::object({ "bad": Json::number(0.0 / 0.0) }),
   }
-  assert_true(@otio.write(invalid) is Err(_))
+  assert_true(@otio.write(invalid).unwrap().contains("NaN"))
 }
 
 ///|

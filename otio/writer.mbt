@@ -155,10 +155,6 @@ fn check_json(
     fail("input_limit", path, "JSON depth/node limit exceeded")
   }
   match j {
-    Number(v, ..) =>
-      if v.is_nan() || v.is_inf() {
-        fail("invalid_number", path, "Nonfinite JSON number")
-      }
     Object(o) =>
       for k, v in o {
         check_json(v, child(path, k), depth + 1, budget)
@@ -179,7 +175,10 @@ pub fn write(timeline : @model.Timeline) -> Result[String, Diagnostic] {
   check_json(j, "", 0, Ref(2000000)) catch {
     Decode(e) => return Err(e)
   }
-  let source = j.stringify()
+  let source = match @otiojson.stringify(j) {
+    Ok(s) => s
+    Err(e) => return Err({ code: "input_limit", path: "", message: e, })
+  }
   match read(source) {
     Err(e) => Err(e)
     Ok(_) => Ok(source)
