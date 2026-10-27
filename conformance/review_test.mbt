@@ -307,7 +307,7 @@ test "edits cannot invalidate transition neighbors and rejection is atomic" {
 }
 
 ///|
-test "unknown and ambiguous time effects are retained but block editing" {
+test "unknown time effects are retained but block editing" {
   for
     effects in [
       Json::array([
@@ -315,10 +315,6 @@ test "unknown and ambiguous time effects are retained but block editing" {
       ]),
       Json::array([
         Json::object({ "OTIO_SCHEMA": Json::string("VendorTimeWarp.1") }),
-      ]),
-      Json::array([
-        Json::object({ "OTIO_SCHEMA": Json::string("FreezeFrame.1") }),
-        Json::object({ "OTIO_SCHEMA": Json::string("FreezeFrame.1") }),
       ]),
     ] {
     let t = review_fixture("plain")

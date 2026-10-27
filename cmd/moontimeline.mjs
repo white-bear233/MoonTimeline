@@ -6,7 +6,7 @@ if(['convert','pack','unpack','flatten','filter','find','trim-range','expand-tra
  try { await (await import('./otio.mjs')).main(args); }
  catch(e) {console.error(JSON.stringify({error:e.message}));process.exitCode=2;}
 } else {
-if(args.length===1 && ['--help','-h'].includes(args[0])) { console.log('moontimeline inspect|validate|export|split|trim|gap INPUT [--output FILE] [--track N --clip N --at-frame N --duration-frames N --rate FPS] [--format json]');process.exit(0); }
+if(args.length===1 && ['--help','-h'].includes(args[0])) { console.log('moontimeline inspect|validate|export|split|trim|gap|convert|pack|unpack|flatten|filter|find|trim-range|expand-transitions INPUT [--output FILE] [--track N --clip N --at-frame N --duration-frames N --rate FPS] [--format json]');process.exit(0); }
 try {
  const c=JSON.parse(parse(args)); if(c.error) throw new Error(c.error);
  if((await stat(c.input)).size>16000000) throw new Error('Input exceeds 16 MB');

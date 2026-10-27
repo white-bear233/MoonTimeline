@@ -11,6 +11,12 @@ pub fn insert_gap(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@
 
 pub fn insert_gap_at(@model.Timeline, Array[Int32], Int32, @time.RationalTime) -> Result[@model.Timeline, String]
 
+pub fn insert_transition(@model.Timeline, Array[Int32], Int32, Json) -> Result[@model.Timeline, String]
+
+pub fn remove_transition(@model.Timeline, Array[Int32]) -> Result[@model.Timeline, String]
+
+pub fn set_transition_offsets(@model.Timeline, Array[Int32], @time.RationalTime, @time.RationalTime) -> Result[@model.Timeline, String]
+
 pub fn split(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@model.Timeline, String]
 
 pub fn split_at(@model.Timeline, Array[Int32], @time.RationalTime) -> Result[@model.Timeline, String]

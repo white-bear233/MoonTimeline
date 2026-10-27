@@ -6,6 +6,8 @@ pub(all) struct Placement {
   item_index : Int32
   start_seconds : Double
   end_seconds : Double
+  start_inclusive : Bool
+  end_inclusive : Bool
   /// Start in media coordinates; duration remains presentation duration.
   source : @range.TimeRange
   time_scalar : Double
@@ -20,9 +22,11 @@ pub(all) struct TransitionPlacement {
   /// Full range in timeline coordinates, before composition clipping.
   start_seconds : Double
   end_seconds : Double
-  cut_seconds : Double
+  cut_seconds : Double?
   visible_start_seconds : Double
   visible_end_seconds : Double
+  start_inclusive : Bool
+  end_inclusive : Bool
   in_seconds : Double
   out_seconds : Double
   enabled : Bool
@@ -88,6 +92,17 @@ fn is_transition(item : @model.Item) -> Bool {
 ///|
 /// OTIO duration, not sequential advancement. A transition has nonzero duration.
 pub fn duration_of(item : @model.Item) -> Result[Double, String] {
+  duration_at_depth(item, 0)
+}
+
+///|
+fn duration_at_depth(
+  item : @model.Item,
+  depth : Int32,
+) -> Result[Double, String] {
+  if depth > 64 {
+    return Err("composition_limit_or_cycle")
+  }
   match item {
     @model.Clip(c) =>
       match c.effective_range() {
@@ -104,7 +119,7 @@ pub fn duration_of(item : @model.Item) -> Result[Double, String] {
             if is_transition(child) {
               continue
             }
-            match duration_of(child) {
+            match duration_at_depth(child, depth + 1) {
               Ok(d) => total = total + d
               Err(e) => return Err(e)
             }
@@ -134,7 +149,7 @@ pub fn duration_of(item : @model.Item) -> Result[Double, String] {
             if is_transition(child) {
               return Err("transition_requires_track")
             }
-            match duration_of(child) {
+            match duration_at_depth(child, depth + 1) {
               Ok(d) => if d > total { total = d }
               Err(e) => return Err(e)
             }
@@ -246,22 +261,6 @@ pub fn transition_range(
 }
 
 ///|
-fn intersect(
-  a0 : Double,
-  a1 : Double,
-  b0 : Double,
-  b1 : Double,
-) -> (Double, Double)? {
-  let lo = if a0 > b0 { a0 } else { b0 }
-  let hi = if a1 < b1 { a1 } else { b1 }
-  if hi > lo {
-    Some((lo, hi))
-  } else {
-    None
-  }
-}
-
-///|
 fn attributes(item : @model.Item) -> @model.Attributes {
   match item {
     @model.Clip(c) => c.attributes
@@ -273,25 +272,86 @@ fn attributes(item : @model.Item) -> @model.Attributes {
 }
 
 ///|
-/// local0/local1 are presentation offsets into the already-trimmed item.
-/// Add each composition's source start exactly once when descending.
+priv struct Window {
+  start : Double
+  end : Double
+  start_inclusive : Bool
+  end_inclusive : Bool
+}
+
+///|
+fn Window::contains(self : Window, t : Double) -> Bool {
+  (t > self.start || (self.start_inclusive && t == self.start)) &&
+  (t < self.end || (self.end_inclusive && t == self.end))
+}
+
+///|
+/// Intersect a root window with a child half-open interval under an affine map.
+/// Reversing time changes which endpoint is closed; a freeze selects one sample.
+fn project(
+  window : Window,
+  origin : Double,
+  slope : Double,
+  lo : Double,
+  hi : Double,
+) -> Result[Window?, String] {
+  if hi <= lo {
+    return Ok(None)
+  }
+  if slope == 0.0 {
+    return Ok(if origin >= lo && origin < hi { Some(window) } else { None })
+  }
+  let a = window.start + (lo - origin) / slope
+  let b = window.start + (hi - origin) / slope
+  for v in [a, b] {
+    match finite(v) {
+      Err(e) => return Err(e)
+      _ => ()
+    }
+  }
+  let lower = if slope > 0.0 { a } else { b }
+  let upper = if slope > 0.0 { b } else { a }
+  let start = if lower > window.start { lower } else { window.start }
+  let end = if upper < window.end { upper } else { window.end }
+  let start_inclusive = (start != lower || slope > 0.0) &&
+    (start != window.start || window.start_inclusive)
+  let end_inclusive = (end != upper || slope < 0.0) &&
+    (end != window.end || window.end_inclusive)
+  Ok(
+    if start < end || (start == end && start_inclusive && end_inclusive) {
+      Some({ start, end, start_inclusive, end_inclusive, })
+    } else {
+      None
+    },
+  )
+}
+
+///|
 fn visit(
   item : @model.Item,
+  window : Window,
   local0 : Double,
-  local1 : Double,
-  offset : Double,
+  slope : Double,
   path : String,
   track_index : Int32,
   item_index : Int32,
   parent_enabled : Bool,
   out : Array[Placement],
   transitions : Array[TransitionPlacement],
+  depth : Int32,
 ) -> Result[Unit, String] {
+  if depth > 64 {
+    return Err("composition_depth")
+  }
   let attr = attributes(item)
   let enabled = parent_enabled && attr.enabled
   let scalar = match attr.playback_scalar() {
     Ok(v) => v
     Err(e) => return Err(e + ":" + path)
+  }
+  let mapped_slope = match finite(slope * scalar) {
+    Ok(v) => v
+    Err(e) => return Err(e)
   }
   let composition = match item {
     @model.Track(t) => Some((t.children, t.source_range, true))
@@ -306,11 +366,11 @@ fn visit(
       }
       let start = original.start().to_seconds().unwrap() + local0 * scalar
       let source = match
-        range_of(start, local1 - local0, original.start().rate()) {
+        range_of(start, window.end - window.start, original.start().rate()) {
         Ok(v) => v
         Err(e) => return Err(e)
       }
-      match finite(start + (local1 - local0) * scalar) {
+      match finite(start + (window.end - window.start) * mapped_slope) {
         Err(e) => return Err(e)
         _ => ()
       }
@@ -323,41 +383,38 @@ fn visit(
         },
         track_index,
         item_index,
-        start_seconds: offset,
-        end_seconds: offset + local1 - local0,
+        start_seconds: window.start,
+        end_seconds: window.end,
+        start_inclusive: window.start_inclusive,
+        end_inclusive: window.end_inclusive,
         source,
-        time_scalar: scalar,
+        time_scalar: mapped_slope,
         enabled,
       })
     }
-    Some((children, window, sequential)) => {
-      if scalar != 1.0 {
-        return Err("unsupported_composition_retime:" + path)
-      }
+    Some((children, source_window, sequential)) => {
       match item {
         @model.Track(t) => {
-          let problems = transition_issues(t)
-          if problems.length() > 0 {
+          let issues = transition_issues(t)
+          if issues.length() > 0 {
             return Err(
-              problems[0].code +
+              issues[0].code +
               ":" +
               path +
               "/children/" +
-              problems[0].index.to_string(),
+              issues[0].index.to_string(),
             )
           }
         }
         _ => ()
       }
-      let w0 = match window {
+      let base = match source_window {
         Some(r) => r.start().to_seconds().unwrap()
         None => 0.0
       }
-      let e0 = w0 + local0
-      let e1 = w0 + local1
-      match finite(e1) {
+      let origin = match finite(base + local0 * scalar) {
+        Ok(v) => v
         Err(e) => return Err(e)
-        _ => ()
       }
       let mut cursor = 0.0
       for i = 0; i < children.length(); i = i + 1 {
@@ -372,17 +429,28 @@ fn visit(
             }
             let a = tr.in_offset.to_seconds().unwrap()
             let b = tr.out_offset.to_seconds().unwrap()
-            let start = cursor - a
-            let end = cursor + b
-            for
-              point in [start, end, offset + (start - e0), offset + (end - e0)] {
-              match finite(point) {
-                Err(e) => return Err(e)
-                Ok(_) => ()
-              }
+            let visible = match
+              project(window, origin, mapped_slope, cursor - a, cursor + b) {
+              Ok(v) => v
+              Err(e) => return Err(e)
             }
-            match intersect(start, end, e0, e1) {
-              Some((v0, v1)) =>
+            match visible {
+              Some(v) => {
+                let full_a = if mapped_slope == 0.0 {
+                  window.start
+                } else {
+                  window.start + (cursor - a - origin) / mapped_slope
+                }
+                let full_b = if mapped_slope == 0.0 {
+                  window.end
+                } else {
+                  window.start + (cursor + b - origin) / mapped_slope
+                }
+                let cut = if mapped_slope == 0.0 {
+                  None
+                } else {
+                  Some(window.start + (cursor - origin) / mapped_slope)
+                }
                 transitions.push({
                   path: child_path,
                   left_path: if i > 0 {
@@ -395,47 +463,63 @@ fn visit(
                   } else {
                     None
                   },
-                  start_seconds: offset + (start - e0),
-                  end_seconds: offset + (end - e0),
-                  cut_seconds: offset + (cursor - e0),
-                  visible_start_seconds: offset + (v0 - e0),
-                  visible_end_seconds: offset + (v1 - e0),
+                  start_seconds: if full_a < full_b {
+                    full_a
+                  } else {
+                    full_b
+                  },
+                  end_seconds: if full_a > full_b {
+                    full_a
+                  } else {
+                    full_b
+                  },
+                  cut_seconds: cut,
+                  visible_start_seconds: v.start,
+                  visible_end_seconds: v.end,
+                  start_inclusive: v.start_inclusive,
+                  end_inclusive: v.end_inclusive,
                   in_seconds: a,
                   out_seconds: b,
                   enabled,
                 })
+              }
               None => ()
             }
             continue
           }
           _ => ()
         }
-        let d = match duration_of(child) {
+        let duration = match duration_of(child) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
-        let b0 = if sequential { cursor } else { 0.0 }
-        let b1 = match finite(b0 + d) {
+        let lo = if sequential { cursor } else { 0.0 }
+        let hi = match finite(lo + duration) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
         if sequential {
-          cursor = b1
+          cursor = hi
         }
-        match intersect(b0, b1, e0, e1) {
-          Some((v0, v1)) =>
+        let visible = match project(window, origin, mapped_slope, lo, hi) {
+          Ok(v) => v
+          Err(e) => return Err(e)
+        }
+        match visible {
+          Some(v) =>
             match
               visit(
                 child,
-                v0 - b0,
-                v1 - b0,
-                offset + (v0 - e0),
+                v,
+                origin + (v.start - window.start) * mapped_slope - lo,
+                mapped_slope,
                 child_path,
                 index,
                 i,
                 enabled,
                 out,
                 transitions,
+                depth + 1,
               ) {
               Err(e) => return Err(e)
               _ => ()
@@ -450,6 +534,10 @@ fn visit(
 
 ///|
 pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
+  match @model.check_tree(t) {
+    Err(e) => return Err(e)
+    _ => ()
+  }
   let root = @model.Stack(t.tracks)
   let duration = match duration_of(root) {
     Ok(v) => v
@@ -458,7 +546,24 @@ pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
   let items : Array[Placement] = []
   let transitions : Array[TransitionPlacement] = []
   match
-    visit(root, 0.0, duration, 0.0, "/tracks", -1, -1, true, items, transitions) {
+    visit(
+      root,
+      {
+        start: 0.0,
+        end: duration,
+        start_inclusive: true,
+        end_inclusive: false,
+      },
+      0.0,
+      1.0,
+      "/tracks",
+      -1,
+      -1,
+      true,
+      items,
+      transitions,
+      0,
+    ) {
     Err(e) => return Err(e)
     _ => ()
   }
@@ -473,9 +578,22 @@ pub fn layout(t : @model.Timeline) -> Result[Layout, String] {
       Err(e) => return Err(e)
     }
     durations.push(
-      match intersect(0.0, d, w0, w0 + duration) {
-        Some((a, b)) => b - a
-        None => 0.0
+      match
+        project(
+          {
+            start: 0.0,
+            end: duration,
+            start_inclusive: true,
+            end_inclusive: false,
+          },
+          w0,
+          t.tracks.attributes.playback_scalar().unwrap(),
+          0.0,
+          d,
+        ) {
+        Ok(Some(v)) => v.end - v.start
+        Ok(None) => 0.0
+        Err(e) => return Err(e)
       },
     )
   }
@@ -497,7 +615,12 @@ pub fn Layout::items_at(
   }
   Ok(
     self.items.filter(fn(p) {
-      seconds >= p.start_seconds && seconds < p.end_seconds
+      Window::{
+        start: p.start_seconds,
+        end: p.end_seconds,
+        start_inclusive: p.start_inclusive,
+        end_inclusive: p.end_inclusive,
+      }.contains(seconds)
     }),
   )
 }
@@ -512,7 +635,12 @@ pub fn Layout::transitions_at(
   }
   Ok(
     self.transitions.filter(fn(p) {
-      seconds >= p.visible_start_seconds && seconds < p.visible_end_seconds
+      Window::{
+        start: p.visible_start_seconds,
+        end: p.visible_end_seconds,
+        start_inclusive: p.start_inclusive,
+        end_inclusive: p.end_inclusive,
+      }.contains(seconds)
     }),
   )
 }
@@ -525,8 +653,12 @@ pub fn Placement::source_at(
 ) -> Result[@time.RationalTime, String] {
   if seconds.is_nan() ||
     seconds.is_inf() ||
-    seconds < self.start_seconds ||
-    seconds >= self.end_seconds {
+    !Window::{
+      start: self.start_seconds,
+      end: self.end_seconds,
+      start_inclusive: self.start_inclusive,
+      end_inclusive: self.end_inclusive,
+    }.contains(seconds) {
     return Err("outside_item")
   }
   let start = self.source.start()

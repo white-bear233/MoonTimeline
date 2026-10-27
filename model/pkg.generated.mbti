@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn check_tree(Timeline) -> Result[Unit, String]
+
 pub fn schema_name(Json) -> String
 
 pub fn transition_of(Item) -> Result[Transition?, String]

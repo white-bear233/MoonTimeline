@@ -71,8 +71,9 @@ pub fn transition_of(item : Item) -> Result[Transition?, String] {
 }
 
 ///|
-/// Playback slope, not a change to OTIO's presentation duration. Multiple
-/// timing effects and unknown effects are preserved but cannot be evaluated.
+/// Playback slope, not a change to OTIO's presentation duration. Enabled affine
+/// effects compose in list order about the source start. Unknown time effects
+/// remain serializable but cannot be evaluated.
 pub fn Attributes::playback_scalar(self : Attributes) -> Result[Double, String] {
   let effects = match self.extra {
     Object(o) =>
@@ -84,8 +85,10 @@ pub fn Attributes::playback_scalar(self : Attributes) -> Result[Double, String] 
     _ => return Err("invalid_attributes")
   }
   let mut scalar = 1.0
-  let mut seen = false
   for effect in effects {
+    if effect is Object(o) && o.get("enabled") == Some(Json::boolean(false)) {
+      continue
+    }
     let tag = schema_name(effect)
     if tag == "Effect.1" {
       continue
@@ -93,10 +96,6 @@ pub fn Attributes::playback_scalar(self : Attributes) -> Result[Double, String] 
     if tag != "LinearTimeWarp.1" && tag != "FreezeFrame.1" {
       return Err("unsupported_time_effect")
     }
-    if seen {
-      return Err("ambiguous_time_effects")
-    }
-    seen = true
     let value = match effect {
       Object(o) =>
         match o.get("time_scalar") {
@@ -112,7 +111,10 @@ pub fn Attributes::playback_scalar(self : Attributes) -> Result[Double, String] 
     if tag == "FreezeFrame.1" && value != 0.0 {
       return Err("invalid_freeze_frame")
     }
-    scalar = value
+    scalar *= value
+    if scalar.is_inf() || scalar.is_nan() {
+      return Err("time_effect_overflow")
+    }
   }
   Ok(scalar)
 }

@@ -8,6 +8,8 @@ import {
 }
 
 // Values
+pub fn check_media_handles(@model.Item, Double, Double) -> Result[Unit, String]
+
 pub fn duration_of(@model.Item) -> Result[Double, String]
 
 pub fn indices_of(String) -> Result[Array[Int32], String]
@@ -45,6 +47,8 @@ pub(all) struct Placement {
   item_index : Int32
   start_seconds : Double
   end_seconds : Double
+  start_inclusive : Bool
+  end_inclusive : Bool
   source : @range.TimeRange
   time_scalar : Double
   enabled : Bool
@@ -62,9 +66,11 @@ pub(all) struct TransitionPlacement {
   right_path : String?
   start_seconds : Double
   end_seconds : Double
-  cut_seconds : Double
+  cut_seconds : Double?
   visible_start_seconds : Double
   visible_end_seconds : Double
+  start_inclusive : Bool
+  end_inclusive : Bool
   in_seconds : Double
   out_seconds : Double
   enabled : Bool

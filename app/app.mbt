@@ -85,7 +85,10 @@ fn describe(t : @model.Timeline) -> Json {
             },
             "start": Json::number(p.start_seconds),
             "end": Json::number(p.end_seconds),
-            "cut": Json::number(p.cut_seconds),
+            "cut": match p.cut_seconds {
+              Some(n) => Json::number(n)
+              None => Json::null()
+            },
             "visible_start": Json::number(p.visible_start_seconds),
             "visible_end": Json::number(p.visible_end_seconds),
             "in_offset": Json::number(p.in_seconds),

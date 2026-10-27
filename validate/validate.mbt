@@ -139,13 +139,33 @@ fn walk_track(
             _ => ()
           }
         @model.Track(_) | @model.Stack(_) =>
-          push(
-            issues,
-            "unknown_transition_handles",
-            Warning,
-            child_path,
-            "Nested composition transition handles require recursive media verification; not verified yet",
-          )
+          match @timeline.check_media_handles(track.children[i], head, tail) {
+            Err("source_out_of_bounds") =>
+              push(
+                issues,
+                "insufficient_transition_handles",
+                Error,
+                child_path,
+                "Nested playback-mapped handles exceed media availability",
+              )
+            Err("unknown_available_range") =>
+              push(
+                issues,
+                "unknown_transition_handles",
+                Warning,
+                child_path,
+                "Nested media availability is unknown",
+              )
+            Err(e) =>
+              push(
+                issues,
+                e,
+                Error,
+                child_path,
+                "Nested transition media mapping failed",
+              )
+            Ok(_) => ()
+          }
         _ => ()
       }
     }
@@ -300,6 +320,9 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
       })
     Ok(_) => ()
   }
+  if has_errors(issues) {
+    return issues
+  }
   walk_stack(t.tracks, "/tracks", issues)
   match @timeline.layout(t) {
     Err(e) =>
@@ -319,7 +342,7 @@ pub fn validate(t : @model.Timeline) -> Array[Issue] {
 ///|
 fn check_attributes(
   attr : @model.Attributes,
-  composition : Bool,
+  _composition : Bool,
   path : String,
   issues : Array[Issue],
 ) -> Unit {
@@ -332,16 +355,7 @@ fn check_attributes(
         path + "/effects",
         "Effects are preserved but cannot be evaluated safely",
       )
-    Ok(n) =>
-      if composition && n != 1.0 {
-        push(
-          issues,
-          "unsupported_composition_retime",
-          Error,
-          path + "/effects",
-          "Composition retiming is not implemented; editing is refused",
-        )
-      }
+    Ok(_) => ()
   }
   match attr.extra {
     Object(o) =>

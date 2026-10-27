@@ -171,6 +171,15 @@ fn check_json(
 /// Serialize the computed subset plus preserved fields; validate public mutable
 /// models before returning output.
 pub fn write(timeline : @model.Timeline) -> Result[String, Diagnostic] {
+  match @model.check_tree(timeline) {
+    Err(e) =>
+      return Err({
+        code: e,
+        path: "/tracks",
+        message: "Composition nesting exceeds limits or contains a cycle",
+      })
+    _ => ()
+  }
   let j = encode_timeline(timeline)
   check_json(j, "", 0, Ref(2000000)) catch {
     Decode(e) => return Err(e)

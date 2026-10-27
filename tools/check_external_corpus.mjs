@@ -64,8 +64,8 @@ for (const name of files) {
   row.compute = first.body && first.body.duration !== null && !first.body.layout_error;
   if (row.compute) computable += 1;
   row.note = first.body?.layout_error || '';
-  const expectedCompute = name !== 'nested_example.otio';
-  if (row.compute !== expectedCompute || (!expectedCompute && !row.note.startsWith('unsupported_composition_retime:'))) {
+  const expectedCompute = true;
+  if (row.compute !== expectedCompute) {
     throw new Error(`${name}: unexpected computation status: ${row.note}`);
   }
   const out = join(scratch, `${name}.out.otio`);

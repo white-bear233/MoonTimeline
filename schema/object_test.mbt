@@ -95,3 +95,23 @@ test "typed effects and media replacement validate keys" {
   assert_true(clip.with_media_references(refs, "missing") is Err(_))
   assert_eq(clip.active_media().unwrap().schema_name(), "MissingReference")
 }
+
+///|
+test "image sequence overflow and noncomposable ownership are explicit errors" {
+  let sequence = @schema.Object::new("ImageSequenceReference")
+    .unwrap()
+    .with_field("rate", Json::number(24.0))
+    .unwrap()
+    .with_field("available_range", @schema.range_json(range(0.0, 1.0e12)))
+    .unwrap()
+  assert_true(
+    @schema.ImageSequence::from_object(sequence) is Err("frame_overflow"),
+  )
+  assert_true(
+    @schema.Object::new("Track")
+    .unwrap()
+    .with_children([@schema.Object::new("ExternalReference").unwrap()])
+    is Err(_),
+  )
+  assert_eq(@schema.Color::named("RED").unwrap().name, "Red")
+}
