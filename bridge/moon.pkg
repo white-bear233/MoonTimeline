@@ -1,11 +1,19 @@
 import {
   "white-bear233/moontimeline/app",
+  "white-bear233/moontimeline/schema",
+  "white-bear233/moontimeline/otiojson",
+  "white-bear233/moontimeline/adapters",
+  "white-bear233/moontimeline/algorithms",
+  "white-bear233/moontimeline/graph",
+  "white-bear233/moontimeline/time",
+  "white-bear233/moontimeline/range",
+  "moonbitlang/core/encoding/base64",
 }
 
 pkgtype(kind: "foreign_library")
 
 options(
-  link: { "js": { "exports": [ "run", "parse" ], "format": "esm" } },
+  link: { "js": { "exports": [ "run", "parse", "otio" ], "format": "esm" } },
 )
 
 supported_targets = "js"

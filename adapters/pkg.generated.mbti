@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/adapters"
+
+// Values
+pub fn bundle(Json, Map[String, Bytes], policy? : MediaPolicy) -> Result[Bundle, String]
+
+pub fn decode_url_path(String) -> Result[String, String]
+
+pub fn encode_url_path(String) -> String
+
+pub fn read_otiod(Map[String, Bytes], max_total_bytes? : Int32) -> Result[Bundle, String]
+
+pub fn read_otioz(Bytes, max_total_bytes? : Int32) -> Result[Bundle, String]
+
+pub fn safe_relative_path(String) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct Bundle {
+  // private fields
+}
+pub fn Bundle::document(Self) -> Json
+pub fn Bundle::entries(Self) -> Map[String, Bytes]
+pub fn Bundle::to_otioz(Self, max_bytes? : Int32) -> Result[Bytes, String]
+
+pub(all) enum MediaPolicy {
+  ErrorIfNotFile
+  MissingIfNotFile
+  AllMissing
+}
+
+// Type aliases
+
+// Traits

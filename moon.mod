@@ -13,3 +13,7 @@ keywords = [ "otio", "timeline", "video" ]
 description = "Native MoonBit OpenTimelineIO implementation in progress: timeline semantics, diagnostics and atomic edits"
 
 preferred_target = "js"
+
+import {
+  "moonbit-community/flate@0.9.0",
+}

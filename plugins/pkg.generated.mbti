@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/plugins"
+
+import {
+  "white-bear233/moontimeline/schema",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct Adapter {
+  name : String
+  suffixes : Array[String]
+  read : (String) -> Result[Json, String]
+  write : (Json) -> Result[String, String]
+}
+
+pub struct Registry {
+  // private fields
+}
+pub fn Registry::adapter_for_suffix(Self, String) -> Result[String, String]
+pub fn Registry::adapter_names(Self) -> Array[String]
+pub fn Registry::convert_schema(Self, @schema.Object, Int32) -> Result[Json, String]
+pub fn Registry::link_media(Self, Json, String, args? : Json) -> Result[Json, String]
+pub fn Registry::load_manifest(Self, @schema.Object, Resolver) -> Result[Unit, String]
+pub fn Registry::media_linker_names(Self) -> Array[String]
+pub fn Registry::new() -> Self
+pub fn Registry::read(Self, String, adapter? : String, media_linker? : String?, args? : Json) -> Result[Json, String]
+pub fn Registry::register_adapter(Self, Adapter) -> Result[Unit, String]
+pub fn Registry::register_hook(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
+pub fn Registry::register_media_linker(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
+pub fn Registry::register_schema(Self, SchemaDefinition) -> Result[Unit, String]
+pub fn Registry::register_version_manifest(Self, String, Map[String, Int32]) -> Result[Unit, String]
+pub fn Registry::upgrade_document(Self, Json) -> Result[Json, String]
+pub fn Registry::write(Self, Json, adapter? : String, args? : Json) -> Result[String, String]
+pub fn Registry::write_versions(Self, Json, String) -> Result[String, String]
+
+pub(all) struct Resolver {
+  adapter : (@schema.Object) -> Result[Adapter, String]
+  hook : (@schema.Object) -> Result[(Json, Json) -> Result[Json, String], String]
+  media_linker : (@schema.Object) -> Result[(Json, Json) -> Result[Json, String], String]
+  schema : (@schema.Object) -> Result[SchemaDefinition, String]
+}
+
+pub(all) struct SchemaDefinition {
+  name : String
+  version : Int32
+  upgrade : (Json, Int32) -> Result[Json, String]
+  downgrade : (Json, Int32) -> Result[Json, String]
+}
+
+// Type aliases
+
+// Traits

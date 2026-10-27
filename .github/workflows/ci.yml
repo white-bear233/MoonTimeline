@@ -51,7 +51,7 @@ jobs:
           python tools/generate_graph_tests.py
           moon fmt conformance
           moon fmt schema
-          git diff --exit-code -- conformance/oracle_test.mbt conformance/opentime_test.mbt conformance/graph_test.mbt schema/defaults.mbt schema/defaults_test.mbt
+          git diff --exit-code -- conformance/oracle_test.mbt conformance/opentime_test.mbt conformance/graph_test.mbt schema/defaults.mbt schema/defaults_test.mbt schema/color_names.mbt
       - run: python tools/check_roundtrip.py --target ${{ matrix.target }}
       - run: python tools/check_edits.py --target ${{ matrix.target }}
       - if: matrix.target == 'js'
@@ -59,6 +59,7 @@ jobs:
           node tools/build-js.mjs
           node --test tests/cli.test.mjs tests/regression.test.mjs
           python tools/check_review.py
+          python tools/check_bundles.py
           node --check demo/app.mjs
           node --check tools/serve.mjs
       - if: matrix.target == 'js'

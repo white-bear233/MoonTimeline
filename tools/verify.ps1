@@ -26,6 +26,8 @@ try {
   CheckExit
   .venv/Scripts/python.exe tools/check_review.py
   CheckExit
+  .venv/Scripts/python.exe tools/check_bundles.py
+  CheckExit
   git diff --check
   CheckExit
 } finally { Pop-Location }
