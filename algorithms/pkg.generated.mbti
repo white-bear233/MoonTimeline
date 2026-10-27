@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/algorithms"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/schema",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn filtered_composition(@schema.Object, (@schema.Object) -> Result[Array[@schema.Object], String], prune? : Array[String]) -> Result[Array[@schema.Object], String]
+
+pub fn filtered_with_sequence_context(@schema.Object, (@schema.Object?, @schema.Object, @schema.Object?) -> Result[Array[@schema.Object], String], prune? : Array[String]) -> Result[Array[@schema.Object], String]
+
+pub fn flatten_stack(@schema.Object) -> Result[@schema.Object, String]
+
+pub fn timeline_trimmed_to_range(@schema.Object, @range.TimeRange) -> Result[@schema.Object, String]
+
+pub fn top_clip_at_time(@schema.Object, @time.RationalTime) -> Result[@schema.Object?, String]
+
+pub fn track_trimmed_to_range(@schema.Object, @range.TimeRange) -> Result[@schema.Object, String]
+
+pub fn track_with_expanded_transitions(@schema.Object) -> Result[Array[Expanded], String]
+
+// Errors
+
+// Types and methods
+pub(all) enum Expanded {
+  Item(@schema.Object)
+  Transition(@schema.Object, @schema.Object, @schema.Object)
+}
+
+// Type aliases
+
+// Traits

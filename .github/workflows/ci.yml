@@ -47,8 +47,11 @@ jobs:
         run: |
           python tools/generate_semantic_tests.py
           python tools/generate_opentime_tests.py
+          python tools/generate_schema_defaults.py
+          python tools/generate_graph_tests.py
           moon fmt conformance
-          git diff --exit-code -- conformance/oracle_test.mbt conformance/opentime_test.mbt
+          moon fmt schema
+          git diff --exit-code -- conformance/oracle_test.mbt conformance/opentime_test.mbt conformance/graph_test.mbt schema/defaults.mbt schema/defaults_test.mbt
       - run: python tools/check_roundtrip.py --target ${{ matrix.target }}
       - run: python tools/check_edits.py --target ${{ matrix.target }}
       - if: matrix.target == 'js'

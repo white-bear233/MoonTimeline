@@ -1,0 +1,145 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/schema"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn parse_range(Json) -> Result[@range.TimeRange, String]
+
+pub fn parse_time(Json) -> Result[@time.RationalTime, String]
+
+pub fn range_json(@range.TimeRange) -> Json
+
+pub fn read(String) -> Result[Object, String]
+
+pub fn registered_schemas() -> Array[String]
+
+pub fn tag(Json) -> String
+
+pub fn time_json(@time.RationalTime) -> Json
+
+pub fn write(Object) -> Result[String, String]
+
+// Errors
+
+// Types and methods
+pub(all) struct Box2d {
+  min : V2d
+  max : V2d
+}
+pub fn Box2d::center(Self) -> V2d
+pub fn Box2d::contains(Self, V2d) -> Bool
+pub fn Box2d::extended_by(Self, Self) -> Self
+pub fn Box2d::extended_by_point(Self, V2d) -> Self
+pub fn Box2d::from_json(Json) -> Result[Self, String]
+pub fn Box2d::intersects(Self, Self) -> Bool
+pub fn Box2d::to_json(Self) -> Json
+
+pub(all) struct Color {
+  r : Double
+  g : Double
+  b : Double
+  a : Double
+  name : String
+}
+pub fn Color::from_agbr_integer(UInt32) -> Self
+pub fn Color::from_float_list(Array[Double], name? : String) -> Result[Self, String]
+pub fn Color::from_hex(String) -> Result[Self, String]
+pub fn Color::from_int_list(Array[Int32], name? : String) -> Result[Self, String]
+pub fn Color::from_json(Json) -> Result[Self, String]
+pub fn Color::named(String) -> Result[Self, String]
+pub fn Color::to_agbr_integer(Self) -> Result[UInt32, String]
+pub fn Color::to_float_list(Self) -> Array[Double]
+pub fn Color::to_hex(Self) -> Result[String, String]
+pub fn Color::to_int_list(Self) -> Result[Array[Int32], String]
+pub fn Color::to_json(Self) -> Json
+
+pub struct Effect {
+  // private fields
+}
+pub fn Effect::from_json(Json) -> Result[Self, String]
+pub fn Effect::linear(Double) -> Result[Self, String]
+pub fn Effect::playback_scalar(Self) -> Result[Double, String]
+pub fn Effect::to_object(Self) -> Object
+
+pub struct ImageSequence {
+  // private fields
+}
+pub fn ImageSequence::abstract_target_url(Self, String) -> String
+pub fn ImageSequence::available_range(Self) -> Result[@range.TimeRange, String]
+pub fn ImageSequence::end_frame(Self) -> Result[Double, String]
+pub fn ImageSequence::frame_duration(Self) -> @time.RationalTime
+pub fn ImageSequence::frame_for_time(Self, @time.RationalTime) -> Result[Double, String]
+pub fn ImageSequence::frame_range(Self, @range.TimeRange) -> Result[(Double, Double), String]
+pub fn ImageSequence::from_object(Object) -> Result[Self, String]
+pub fn ImageSequence::number_of_images(Self) -> Int32
+pub fn ImageSequence::presentation_time(Self, Int32) -> Result[@time.RationalTime, String]
+pub fn ImageSequence::target_url(Self, Int32) -> Result[String, String]
+pub fn ImageSequence::to_object(Self) -> Object
+
+pub struct Marker {
+  // private fields
+}
+pub fn Marker::from_json(Json) -> Result[Self, String]
+pub fn Marker::marked_range(Self) -> @range.TimeRange
+pub fn Marker::new(String, @range.TimeRange, color? : String, comment? : String, metadata? : Json) -> Result[Self, String]
+pub fn Marker::to_object(Self) -> Object
+pub fn Marker::with_range(Self, @range.TimeRange) -> Self
+
+pub struct Object {
+  // private fields
+}
+pub fn Object::active_media(Self) -> Result[Self, String]
+pub fn Object::children(Self) -> Result[Array[Self], String]
+pub fn Object::effects(Self) -> Result[Array[Effect], String]
+pub fn Object::equivalent(Self, Self) -> Bool
+pub fn Object::from_json(Json) -> Result[Self, String]
+pub fn Object::generator_parameters(Self) -> Result[Json, String]
+pub fn Object::get(Self, String) -> Json?
+pub fn Object::image_bounds(Self) -> Result[Box2d?, String]
+pub fn Object::is_unknown(Self) -> Bool
+pub fn Object::markers(Self) -> Result[Array[Marker], String]
+pub fn Object::markers_in_range(Self, @range.TimeRange) -> Result[Array[Marker], String]
+pub fn Object::metadata(Self) -> Result[Json, String]
+pub fn Object::name(Self) -> Result[String, String]
+pub fn Object::new(String) -> Result[Self, String]
+pub fn Object::overlapping(Self) -> Bool
+pub fn Object::schema_name(Self) -> String
+pub fn Object::schema_version(Self) -> Int32
+pub fn Object::source_range(Self) -> Result[@range.TimeRange?, String]
+pub fn Object::to_json(Self) -> Result[Json, String]
+pub fn Object::to_version(Self, Int32) -> Result[Json, String]
+pub fn Object::visible(Self) -> Bool
+pub fn Object::with_children(Self, Array[Self]) -> Result[Self, String]
+pub fn Object::with_effects(Self, Array[Effect]) -> Result[Self, String]
+pub fn Object::with_field(Self, String, Json) -> Result[Self, String]
+pub fn Object::with_generator_parameters(Self, Json) -> Result[Self, String]
+pub fn Object::with_image_bounds(Self, Box2d?) -> Result[Self, String]
+pub fn Object::with_markers(Self, Array[Marker]) -> Result[Self, String]
+pub fn Object::with_media_references(Self, Map[String, Self], String) -> Result[Self, String]
+pub fn Object::with_metadata(Self, Json) -> Result[Self, String]
+pub fn Object::with_name(Self, String) -> Result[Self, String]
+pub fn Object::with_source_range(Self, @range.TimeRange?) -> Result[Self, String]
+
+pub(all) struct V2d {
+  x : Double
+  y : Double
+}
+pub fn V2d::add(Self, Self) -> Self
+pub fn V2d::cross(Self, Self) -> Double
+pub fn V2d::dot(Self, Self) -> Double
+pub fn V2d::equal_with_error(Self, Self, Double, relative? : Bool) -> Bool
+pub fn V2d::from_json(Json) -> Result[Self, String]
+pub fn V2d::length(Self) -> Double
+pub fn V2d::length_squared(Self) -> Double
+pub fn V2d::multiply(Self, Double) -> Self
+pub fn V2d::normalized(Self, reject_zero? : Bool) -> Result[Self, String]
+pub fn V2d::subtract(Self, Self) -> Self
+pub fn V2d::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

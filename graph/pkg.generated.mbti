@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/graph"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/schema",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn available_image_bounds(@schema.Object) -> Result[@schema.Box2d?, String]
+
+pub fn available_range(@schema.Object) -> Result[@range.TimeRange, String]
+
+pub fn duration(@schema.Object) -> Result[Double, String]
+
+pub fn range_of_child(@schema.Object, Int32) -> Result[@range.TimeRange, String]
+
+pub fn trimmed_range(@schema.Object) -> Result[@range.TimeRange, String]
+
+// Errors
+
+// Types and methods
+pub struct Graph {
+  // private fields
+}
+pub fn Graph::at(Self, Array[Int32]) -> Result[@schema.Object, String]
+pub fn Graph::child_at_time(Self, Array[Int32], @time.RationalTime, shallow? : Bool) -> Result[Array[Int32]?, String]
+pub fn Graph::children(Self, Array[Int32]) -> Result[Array[@schema.Object], String]
+pub fn Graph::children_at_time(Self, Array[Int32], @time.RationalTime) -> Result[Array[Array[Int32]], String]
+pub fn Graph::children_in_range(Self, Array[Int32], @range.TimeRange) -> Result[Array[Array[Int32]], String]
+pub fn Graph::find(Self, schema? : String, name? : String, shallow? : Bool) -> Array[Array[Int32]]
+pub fn Graph::handles(Self, Array[Int32]) -> Result[(Double, Double), String]
+pub fn Graph::insert(Self, Array[Int32], Int32, @schema.Object) -> Result[Self, String]
+pub fn Graph::markers_in_coordinates(Self, Array[Int32], Array[Int32]) -> Result[Array[@schema.Marker], String]
+pub fn Graph::neighbors(Self, Array[Int32], insert_gaps? : Bool) -> Result[(@schema.Object?, @schema.Object?), String]
+pub fn Graph::new(@schema.Object) -> Self
+pub fn Graph::parent(Self, Array[Int32]) -> Result[@schema.Object?, String]
+pub fn Graph::range_in_parent(Self, Array[Int32], trimmed? : Bool) -> Result[@range.TimeRange?, String]
+pub fn Graph::range_of_descendant(Self, Array[Int32], Array[Int32], trimmed? : Bool) -> Result[@range.TimeRange?, String]
+pub fn Graph::ranges_of_all_children(Self, Array[Int32], trimmed? : Bool) -> Result[Array[@range.TimeRange?], String]
+pub fn Graph::remove(Self, Array[Int32]) -> Result[Self, String]
+pub fn Graph::replace(Self, Array[Int32], @schema.Object) -> Result[Self, String]
+pub fn Graph::root(Self) -> @schema.Object
+pub fn Graph::tracks(Self, String) -> Result[Array[@schema.Object], String]
+pub fn Graph::transformed_range(Self, @range.TimeRange, Array[Int32], Array[Int32]) -> Result[@range.TimeRange, String]
+pub fn Graph::transformed_time(Self, @time.RationalTime, Array[Int32], Array[Int32]) -> Result[@time.RationalTime, String]
+pub fn Graph::visible_range(Self, Array[Int32]) -> Result[@range.TimeRange, String]
+
+// Type aliases
+
+// Traits

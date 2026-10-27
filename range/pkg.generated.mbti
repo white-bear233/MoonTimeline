@@ -21,6 +21,8 @@ pub(all) enum Relation {
   Intersects
   Equal
 } derive(Eq)
+pub fn Relation::equal(Self, Self) -> Bool
+pub fn Relation::not_equal(Self, Self) -> Bool
 
 pub struct TimeRange {
   // private fields
