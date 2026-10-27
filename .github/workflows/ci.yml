@@ -29,6 +29,7 @@ jobs:
           bash /tmp/install-moon.sh 0.10.16+b1a0e846e
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
+      - run: moon update
       - run: moon fmt --check
       - name: Verify reader fixtures are reproducible
         run: |
