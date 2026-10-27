@@ -23,6 +23,7 @@ pub struct Registry {
 pub fn Registry::adapter_for_suffix(Self, String) -> Result[String, String]
 pub fn Registry::adapter_names(Self) -> Array[String]
 pub fn Registry::convert_schema(Self, @schema.Object, Int32) -> Result[Json, String]
+pub fn Registry::discover(Self, Array[String], (String) -> Result[String, String], Resolver) -> Result[Array[String], String]
 pub fn Registry::link_media(Self, Json, String, args? : Json) -> Result[Json, String]
 pub fn Registry::load_manifest(Self, @schema.Object, Resolver) -> Result[Unit, String]
 pub fn Registry::media_linker_names(Self) -> Array[String]

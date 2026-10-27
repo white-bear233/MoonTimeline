@@ -50,6 +50,37 @@ pub fn Registry::media_linker_names(self : Registry) -> Array[String] {
 }
 
 ///|
+/// Host supplies discovered paths (for example OTIO_PLUGIN_MANIFEST_PATH) and
+/// file IO. Duplicate paths are ignored. Each manifest loads atomically.
+pub fn Registry::discover(
+  self : Registry,
+  paths : Array[String],
+  read_file : (String) -> Result[String, String],
+  resolver : Resolver,
+) -> Result[Array[String], String] {
+  let loaded : Array[String] = []
+  for path in paths {
+    if loaded.contains(path) {
+      continue
+    }
+    let text = match read_file(path) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+    let manifest = match @schema.read(text) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+    match self.load_manifest(manifest, resolver) {
+      Err(e) => return Err(path + ":" + e)
+      _ => ()
+    }
+    loaded.push(path)
+  }
+  Ok(loaded)
+}
+
+///|
 /// Registration is atomic: failed resolution or invalid hooks leave the registry
 /// unchanged. Callback side effects remain the responsibility of the host.
 pub fn Registry::load_manifest(

@@ -360,3 +360,341 @@ test "official schema default V2d" {
   let parsed = @schema.read(@schema.write(obj).unwrap()).unwrap()
   assert_true(obj.equivalent(parsed))
 }
+
+///|
+test "official required fields Box2d" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Box2d.1\",\"max\":{\"OTIO_SCHEMA\":\"V2d.1\",\"x\":0.0,\"y\":0.0}}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Box2d.1\",\"min\":{\"OTIO_SCHEMA\":\"V2d.1\",\"x\":0.0,\"y\":0.0}}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Clip" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Clip.2\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"active_media_reference_key\":\"DEFAULT_MEDIA\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Clip.2\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"media_references\":{\"DEFAULT_MEDIA\":{\"OTIO_SCHEMA\":\"MissingReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null}}}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Color" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Color.1\",\"g\":1.0,\"b\":1.0,\"a\":1.0,\"name\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Color.1\",\"r\":1.0,\"b\":1.0,\"a\":1.0,\"name\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Color.1\",\"r\":1.0,\"g\":1.0,\"a\":1.0,\"name\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Color.1\",\"r\":1.0,\"g\":1.0,\"b\":1.0,\"name\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Color.1\",\"r\":1.0,\"g\":1.0,\"b\":1.0,\"a\":1.0}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Composition" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Composition.1\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Effect" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Effect.1\",\"metadata\":{},\"name\":\"\",\"enabled\":true}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields ExternalReference" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ExternalReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields FreezeFrame" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"FreezeFrame.1\",\"metadata\":{},\"name\":\"\",\"enabled\":true,\"time_scalar\":0.0}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"FreezeFrame.1\",\"metadata\":{},\"name\":\"\",\"effect_name\":\"FreezeFrame\",\"enabled\":true}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields GeneratorReference" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"GeneratorReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"parameters\":{}}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"GeneratorReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"generator_kind\":\"\"}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields ImageSequenceReference" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"name_prefix\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"frame_step\":1,\"rate\":1.0,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"frame_step\":1,\"rate\":1.0,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"start_frame\":1,\"frame_step\":1,\"rate\":1.0,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"name_suffix\":\"\",\"frame_step\":1,\"rate\":1.0,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"rate\":1.0,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"frame_step\":1,\"frame_zero_padding\":0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"frame_step\":1,\"rate\":1.0,\"missing_frame_policy\":\"error\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"ImageSequenceReference.1\",\"metadata\":{},\"name\":\"\",\"available_range\":null,\"available_image_bounds\":null,\"target_url_base\":\"\",\"name_prefix\":\"\",\"name_suffix\":\"\",\"start_frame\":1,\"frame_step\":1,\"rate\":1.0,\"frame_zero_padding\":0}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields LinearTimeWarp" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"LinearTimeWarp.1\",\"metadata\":{},\"name\":\"\",\"enabled\":true,\"time_scalar\":1.0}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"LinearTimeWarp.1\",\"metadata\":{},\"name\":\"\",\"effect_name\":\"LinearTimeWarp\",\"enabled\":true}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Marker" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Marker.2\",\"metadata\":{},\"name\":\"\",\"color\":\"RED\",\"comment\":\"\"}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields RationalTime" {
+  assert_true(
+    @schema.read("{\"OTIO_SCHEMA\":\"RationalTime.1\",\"value\":0.0}") is Err(_),
+  )
+  assert_true(
+    @schema.read("{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0}") is Err(_),
+  )
+}
+
+///|
+test "official required fields SerializableCollection" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"SerializableCollection.1\",\"metadata\":{},\"name\":\"\"}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Stack" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Stack.1\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields TimeEffect" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeEffect.1\",\"metadata\":{},\"name\":\"\",\"enabled\":true}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields TimeRange" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeRange.1\",\"start_time\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0}}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeRange.1\",\"duration\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0}}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields TimeTransform" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeTransform.1\",\"rate\":-1.0,\"scale\":1.0}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeTransform.1\",\"offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0},\"scale\":1.0}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"TimeTransform.1\",\"offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0},\"rate\":-1.0}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Timeline" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Timeline.1\",\"metadata\":{},\"name\":\"\",\"global_start_time\":null}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Track" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Track.1\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"kind\":\"Video\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Track.1\",\"metadata\":{},\"name\":\"\",\"source_range\":null,\"effects\":[],\"markers\":[],\"enabled\":true,\"color\":null,\"children\":[]}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields Transition" {
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Transition.1\",\"metadata\":{},\"name\":\"\",\"out_offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0},\"transition_type\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Transition.1\",\"metadata\":{},\"name\":\"\",\"in_offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0},\"transition_type\":\"\"}",
+    )
+    is Err(_),
+  )
+  assert_true(
+    @schema.read(
+      "{\"OTIO_SCHEMA\":\"Transition.1\",\"metadata\":{},\"name\":\"\",\"in_offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0},\"out_offset\":{\"OTIO_SCHEMA\":\"RationalTime.1\",\"rate\":1.0,\"value\":0.0}}",
+    )
+    is Err(_),
+  )
+}
+
+///|
+test "official required fields V2d" {
+  assert_true(@schema.read("{\"OTIO_SCHEMA\":\"V2d.1\",\"y\":0.0}") is Err(_))
+  assert_true(@schema.read("{\"OTIO_SCHEMA\":\"V2d.1\",\"x\":0.0}") is Err(_))
+}

@@ -97,6 +97,39 @@ fn upgrade(raw : Json, depth : Int32) -> Result[Json, String] {
         }
         Err(_) => ()
       }
+      let (current_name, _) = split_tag(tag(Json::object(result))).unwrap()
+      match default_json(current_name) {
+        Ok(Object(defaults)) => {
+          for field in required_fields(current_name) {
+            if !result.contains(field) {
+              return Err("missing_field:" + current_name + "." + field)
+            }
+          }
+          for key, default in defaults {
+            match result.get(key) {
+              None => result[key] = default
+              Some(value) => {
+                let valid = match (default, value) {
+                  (Null, _) => true
+                  (String(_), String(_))
+                  | (Number(_, ..), Number(_, ..))
+                  | (Array(_), Array(_))
+                  | (Object(_), Object(_))
+                  | (True, True)
+                  | (True, False)
+                  | (False, True)
+                  | (False, False) => true
+                  _ => false
+                }
+                if !valid {
+                  return Err("invalid_field_type:" + current_name + "." + key)
+                }
+              }
+            }
+          }
+        }
+        _ => ()
+      }
       Ok(Json::object(result))
     }
     _ => Ok(raw)
