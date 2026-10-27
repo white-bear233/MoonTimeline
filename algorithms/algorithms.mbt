@@ -1,38 +1,4 @@
 ///|
-fn span(start : Double, duration : Double) -> Result[@range.TimeRange, String] {
-  let a = match @time.RationalTime::new(start, 1.0) {
-    Ok(v) => v
-    Err(_) => return Err("time_overflow")
-  }
-  let b = match @time.RationalTime::new(duration, 1.0) {
-    Ok(v) => v
-    Err(_) => return Err("time_overflow")
-  }
-  @range.TimeRange::new(a, b)
-}
-
-///|
-fn set_range(
-  item : @schema.Object,
-  start : Double,
-  duration : Double,
-) -> Result[@schema.Object, String] {
-  let r = match span(start, duration) {
-    Ok(v) => v
-    Err(e) => return Err(e)
-  }
-  let rate = match @graph.trimmed_range(item) {
-    Ok(v) => v.start().rate()
-    Err(_) => 1.0
-  }
-  let converted = @range.TimeRange::new(
-    r.start().rescaled_to(rate).unwrap(),
-    r.duration().rescaled_to(rate).unwrap(),
-  ).unwrap()
-  item.with_field("source_range", @schema.range_json(converted))
-}
-
-///|
 /// Structural OTIO algorithm: TimeEffects remain metadata, as in upstream.
 /// Playback-aware editing is provided separately by the edit package.
 pub fn track_trimmed_to_range(
@@ -47,20 +13,17 @@ pub fn track_trimmed_to_range(
     Err(e) => return Err(e)
   }
   let out : Array[@schema.Object] = []
-  let lo = bounds.start().to_seconds().unwrap()
-  let hi = bounds.end_seconds()
+  let ranges = match @graph.Graph::new(track).ranges_of_all_children([]) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
   for i = 0; i < children.length(); i = i + 1 {
     let item = children[i]
-    let range = match @graph.range_of_child(track, i) {
-      Ok(v) => v
-      Err(e) => return Err(e)
-    }
-    let a = range.start().to_seconds().unwrap()
-    let b = range.end_seconds()
-    if !bounds.relates(range, @range.Intersects) {
+    let r = ranges[i].unwrap()
+    if !bounds.relates(r, @range.Intersects) {
       continue
     }
-    if bounds.relates(range, @range.Contains) {
+    if bounds.relates(r, @range.Contains) {
       out.push(item)
       continue
     }
@@ -71,18 +34,22 @@ pub fn track_trimmed_to_range(
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    let start = if lo > a { lo } else { a }
-    let end = if hi < b { hi } else { b }
-    let trimmed = match
-      set_range(
-        item,
-        source.start().to_seconds().unwrap() + start - a,
-        end - start,
-      ) {
-      Ok(v) => v
+    let mut start = source.start()
+    let mut duration = source.duration()
+    if bounds.start().to_seconds().unwrap() > r.start().to_seconds().unwrap() {
+      let delta = bounds.start().subtract(r.start()).unwrap()
+      start = start.add(delta).unwrap()
+      duration = duration.subtract(delta).unwrap()
+    }
+    let end = bounds.end_time_exclusive().unwrap()
+    let child_end = r.end_time_exclusive().unwrap()
+    if end.to_seconds().unwrap() < child_end.to_seconds().unwrap() {
+      duration = duration.subtract(child_end.subtract(end).unwrap()).unwrap()
+    }
+    match timed_item(item, start, duration) {
+      Ok(v) => out.push(v)
       Err(e) => return Err(e)
     }
-    out.push(trimmed)
   }
   track.with_children(out)
 }
@@ -143,10 +110,16 @@ fn timed_item(
   start : @time.RationalTime,
   duration : @time.RationalTime,
 ) -> Result[@schema.Object, String] {
-  match @range.TimeRange::new(start, duration) {
-    Ok(r) => item.with_field("source_range", @schema.range_json(r))
-    Err(e) => Err(e)
-  }
+  // Official structural expansion can produce negative durations when handles
+  // exceed a clip. Preserve that value here; the editing validator rejects it.
+  item.with_field(
+    "source_range",
+    Json::object({
+      "OTIO_SCHEMA": Json::string("TimeRange.1"),
+      "start_time": @schema.time_json(start),
+      "duration": @schema.time_json(duration),
+    }),
+  )
 }
 
 ///|
@@ -333,7 +306,7 @@ pub fn flatten_stack(stack : @schema.Object) -> Result[@schema.Object, String] {
     Err(e) => return Err(e)
   }
   let tracks : Array[@schema.Object] = []
-  let mut longest = 0.0
+  let mut longest = @time.RationalTime::new(0.0, 1.0).unwrap()
   for track in children {
     if track.schema_name() != "Track" {
       return Err("not_a_track")
@@ -341,21 +314,25 @@ pub fn flatten_stack(stack : @schema.Object) -> Result[@schema.Object, String] {
     if !visible(track) {
       continue
     }
-    let d = match @graph.duration(track) {
+    let d = match @graph.duration_time(track) {
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    if d > longest {
+    if d.to_seconds().unwrap() > longest.to_seconds().unwrap() {
       longest = d
     }
     tracks.push(track)
   }
   for i = 0; i < tracks.length(); i = i + 1 {
-    let d = @graph.duration(tracks[i]).unwrap()
-    if d < longest {
+    let d = @graph.duration_time(tracks[i]).unwrap()
+    if d.to_seconds().unwrap() < longest.to_seconds().unwrap() {
       let a = tracks[i].children().unwrap()
       a.push(
-        set_range(@schema.Object::new("Gap").unwrap(), 0.0, longest - d).unwrap(),
+        timed_item(
+          @schema.Object::new("Gap").unwrap(),
+          @time.RationalTime::new(0.0, longest.subtract(d).unwrap().rate()).unwrap(),
+          longest.subtract(d).unwrap(),
+        ).unwrap(),
       )
       tracks[i] = tracks[i].with_children(a).unwrap()
     }
@@ -381,18 +358,16 @@ pub fn flatten_stack(stack : @schema.Object) -> Result[@schema.Object, String] {
       if a[i].schema_name() == "Transition" || visible(a[i]) || index == 0 {
         out.push(a[i])
       } else {
-        let range = match @graph.range_of_child(track, i) {
+        let ranges = match @graph.Graph::new(track).ranges_of_all_children([]) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
-        let origin = match bounds {
-          Some(r) => r.start().to_seconds().unwrap()
-          None => 0.0
+        let range = ranges[i].unwrap()
+        let start = match bounds {
+          Some(r) => range.start().add(r.start()).unwrap()
+          None => range.start()
         }
-        let next = span(
-          range.start().to_seconds().unwrap() + origin,
-          range.duration().to_seconds().unwrap(),
-        ).unwrap()
+        let next = @range.TimeRange::new(start, range.duration()).unwrap()
         match collect(index - 1, Some(next)) {
           Err(e) => return Err(e)
           _ => ()

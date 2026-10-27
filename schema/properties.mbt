@@ -152,3 +152,8 @@ pub fn Object::with_generator_parameters(
   }
   self.with_field("parameters", parameters)
 }
+
+///|
+pub fn Object::is_missing_reference(self : Object) -> Bool {
+  self.schema_name() == "MissingReference"
+}

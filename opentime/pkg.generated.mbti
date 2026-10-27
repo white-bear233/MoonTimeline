@@ -1,0 +1,92 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/opentime"
+
+import {
+  "white-bear233/moontimeline/range",
+  "white-bear233/moontimeline/time",
+}
+
+// Values
+pub fn duration_from_start_end_time(RationalTime, RationalTime, inclusive? : Bool) -> RationalTime
+
+pub fn from_frames(Double, Double) -> Result[RationalTime, String]
+
+pub fn from_seconds(Double, rate? : Double) -> RationalTime
+
+pub fn from_start_end(RationalTime, RationalTime, inclusive? : Bool) -> TimeRange
+
+pub fn from_time_string(String, Double) -> Result[RationalTime, @time.TimeError]
+
+pub fn from_timecode(String, Double) -> Result[RationalTime, @time.TimeError]
+
+pub fn is_smpte_timecode_rate(Double) -> Bool
+
+pub fn nearest_smpte_timecode_rate(Double) -> Double
+
+// Errors
+
+// Types and methods
+pub(all) struct RationalTime {
+  value : Double
+  rate : Double
+}
+pub fn RationalTime::add(Self, Self) -> Self
+pub fn RationalTime::almost_equal(Self, Self, delta? : Double) -> Bool
+pub fn RationalTime::ceil(Self) -> Self
+pub fn RationalTime::checked(Self) -> Result[@time.RationalTime, @time.TimeError]
+pub fn RationalTime::equals(Self, Self) -> Bool
+pub fn RationalTime::floor(Self) -> Self
+pub fn RationalTime::from_json(Json) -> Result[Self, String]
+pub fn RationalTime::greater(Self, Self) -> Bool
+pub fn RationalTime::greater_equal(Self, Self) -> Bool
+pub fn RationalTime::is_invalid_time(Self) -> Bool
+pub fn RationalTime::is_valid_time(Self) -> Bool
+pub fn RationalTime::less(Self, Self) -> Bool
+pub fn RationalTime::less_equal(Self, Self) -> Bool
+pub fn RationalTime::negated(Self) -> Self
+pub fn RationalTime::new(value? : Double, rate? : Double) -> Self
+pub fn RationalTime::rescaled_to(Self, Double) -> Self
+pub fn RationalTime::round(Self) -> Self
+pub fn RationalTime::strictly_equal(Self, Self) -> Bool
+pub fn RationalTime::subtract(Self, Self) -> Self
+pub fn RationalTime::to_frames(Self, rate? : Double) -> Result[Int32, String]
+pub fn RationalTime::to_json(Self) -> Json
+pub fn RationalTime::to_nearest_timecode(Self, rate? : Double, drop_frame? : Bool?) -> Result[String, @time.TimeError]
+pub fn RationalTime::to_seconds(Self) -> Double
+pub fn RationalTime::to_time_string(Self) -> Result[String, @time.TimeError]
+pub fn RationalTime::to_timecode(Self, rate? : Double, drop_frame? : Bool?) -> Result[String, @time.TimeError]
+pub fn RationalTime::value_rescaled_to(Self, Double) -> Double
+
+pub(all) struct TimeRange {
+  start_time : RationalTime
+  duration : RationalTime
+}
+pub fn TimeRange::clamp_range(Self, Self) -> Self
+pub fn TimeRange::clamp_time(Self, RationalTime) -> RationalTime
+pub fn TimeRange::contains(Self, RationalTime) -> Bool
+pub fn TimeRange::duration_extended_by(Self, RationalTime) -> Self
+pub fn TimeRange::end_time_exclusive(Self) -> RationalTime
+pub fn TimeRange::end_time_inclusive(Self) -> RationalTime
+pub fn TimeRange::extended_by(Self, Self) -> Self
+pub fn TimeRange::is_invalid_range(Self) -> Bool
+pub fn TimeRange::is_valid_range(Self) -> Bool
+pub fn TimeRange::new(start_time? : RationalTime, duration? : RationalTime) -> Self
+pub fn TimeRange::relates(Self, Self, @range.Relation, epsilon? : Double) -> Bool
+pub fn TimeRange::relates_time(Self, RationalTime, @range.Relation, epsilon? : Double) -> Result[Bool, String]
+pub fn TimeRange::to_json(Self) -> Json
+
+pub(all) struct TimeTransform {
+  offset : RationalTime
+  scale : Double
+  rate : Double
+}
+pub fn TimeTransform::apply_range(Self, TimeRange) -> TimeRange
+pub fn TimeTransform::apply_time(Self, RationalTime) -> RationalTime
+pub fn TimeTransform::apply_transform(Self, Self) -> Self
+pub fn TimeTransform::equals(Self, Self) -> Bool
+pub fn TimeTransform::new(offset? : RationalTime, scale? : Double, rate? : Double) -> Self
+pub fn TimeTransform::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits

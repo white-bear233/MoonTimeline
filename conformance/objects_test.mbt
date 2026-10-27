@@ -99,11 +99,23 @@ test "recursive graph time search ranges and image bounds" {
     .with_media_references({ "DEFAULT_MEDIA": media }, "DEFAULT_MEDIA")
     .unwrap()
   let result = g.replace([0, 0, 0], changed).unwrap()
+  let other = result.at([0, 0, 2]).unwrap()
+  let other_media = other
+    .active_media()
+    .unwrap()
+    .with_image_bounds(Some(box))
+    .unwrap()
+  let result = result
+    .replace(
+      [0, 0, 2],
+      other
+      .with_media_references({ "DEFAULT_MEDIA": other_media }, "DEFAULT_MEDIA")
+      .unwrap(),
+    )
+    .unwrap()
   assert_eq(
     @graph.available_image_bounds(result.at([0]).unwrap()).unwrap().unwrap().max.x,
     1920.0,
   )
-  assert_true(
-    @graph.available_image_bounds(g.at([0]).unwrap()).unwrap() is None,
-  )
+  assert_true(@graph.available_image_bounds(g.at([0]).unwrap()) is Err(_))
 }

@@ -121,6 +121,64 @@ fn offset(object : @schema.Object, key : String) -> Result[Double, String] {
 }
 
 ///|
+fn offset_time(
+  object : @schema.Object,
+  key : String,
+) -> Result[@time.RationalTime, String] {
+  match object.get(key) {
+    Some(j) => @schema.parse_time(j)
+    None => Err("missing_offset")
+  }
+}
+
+///|
+pub fn duration_time(
+  object : @schema.Object,
+) -> Result[@time.RationalTime, String] {
+  if object.schema_name() == "Transition" {
+    let a = match offset_time(object, "in_offset") {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+    let b = match offset_time(object, "out_offset") {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+    match a.add(b) {
+      Ok(v) => Ok(v)
+      Err(_) => Err("time_overflow")
+    }
+  } else {
+    match trimmed_range(object) {
+      Ok(r) => Ok(r.duration())
+      Err(e) => Err(e)
+    }
+  }
+}
+
+///|
+fn add_time(
+  a : @time.RationalTime,
+  b : @time.RationalTime,
+) -> Result[@time.RationalTime, String] {
+  match a.add(b) {
+    Ok(v) => Ok(v)
+    Err(_) => Err("time_overflow")
+  }
+}
+
+///|
+fn sub_time(
+  a : @time.RationalTime,
+  b : @time.RationalTime,
+) -> Result[@time.RationalTime, String] {
+  match a.subtract(b) {
+    Ok(v) => Ok(v)
+    Err(_) => Err("time_overflow")
+  }
+}
+
+///|
 pub fn available_range(
   object : @schema.Object,
 ) -> Result[@range.TimeRange, String] {
@@ -145,41 +203,45 @@ pub fn available_range(
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    let mut extent = 0.0
-    for child in a {
-      if child.schema_name() == "Transition" {
+    let mut extent = @time.RationalTime::new(0.0, 1.0).unwrap()
+    for i = 0; i < a.length(); i = i + 1 {
+      let child = a[i]
+      if kind == "Track" && child.schema_name() == "Transition" {
         continue
       }
-      let d = match duration(child) {
+      let d = match duration_time(child) {
         Ok(v) => v
         Err(e) => return Err(e)
       }
       if kind == "Track" {
-        extent += d
-      } else if d > extent {
+        extent = match add_time(extent, d) {
+          Ok(v) => v
+          Err(e) => return Err(e)
+        }
+      } else if i == 0 || d.to_seconds().unwrap() > extent.to_seconds().unwrap() {
         extent = d
       }
     }
     if kind == "Track" && a.length() > 0 {
-      if a[0].schema_name() == "Transition" {
-        extent += match offset(a[0], "in_offset") {
-          Ok(v) => v
-          Err(e) => return Err(e)
-        }
-      }
-      if a[a.length() - 1].schema_name() == "Transition" {
-        extent += match offset(a[a.length() - 1], "out_offset") {
-          Ok(v) => v
-          Err(e) => return Err(e)
+      for (i, key) in [(0, "in_offset"), (a.length() - 1, "out_offset")] {
+        if a[i].schema_name() == "Transition" {
+          let d = match offset_time(a[i], key) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
+          extent = match add_time(extent, d) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
         }
       }
     }
-    span(0.0, extent)
+    @range.TimeRange::new(
+      @time.RationalTime::new(0.0, extent.rate()).unwrap(),
+      extent,
+    )
   } else if kind == "Gap" {
-    match object.get("source_range") {
-      Some(j) => @schema.parse_range(j)
-      None => span(0.0, 0.0)
-    }
+    Err("not_implemented:available_range")
   } else {
     match object.get("available_range") {
       Some(j) => @schema.parse_range(j)
@@ -231,34 +293,43 @@ pub fn range_of_child(
     Ok(a) => a
     Err(e) => return Err(e)
   }
+  let index = if index < 0 { index + a.length() } else { index }
   if index < 0 || index >= a.length() {
     return Err("child_index")
   }
   if !["Timeline", "Track", "Stack"].contains(parent.schema_name()) {
     return Err("not_a_composition")
   }
-  let mut start = 0.0
+  let d = match duration_time(a[index]) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  let mut start = @time.RationalTime::new(0.0, d.rate()).unwrap()
   if parent.schema_name() == "Track" {
     for i = 0; i < index; i = i + 1 {
-      if a[i].schema_name() != "Transition" {
-        start += match duration(a[i]) {
+      if !a[i].overlapping() {
+        let previous = match duration_time(a[i]) {
+          Ok(v) => v
+          Err(e) => return Err(e)
+        }
+        start = match add_time(start, previous) {
           Ok(v) => v
           Err(e) => return Err(e)
         }
       }
     }
     if a[index].schema_name() == "Transition" {
-      start -= match offset(a[index], "in_offset") {
+      let head = match offset_time(a[index], "in_offset") {
+        Ok(v) => v
+        Err(e) => return Err(e)
+      }
+      start = match sub_time(start, head) {
         Ok(v) => v
         Err(e) => return Err(e)
       }
     }
   }
-  let d = match duration(a[index]) {
-    Ok(v) => v
-    Err(e) => return Err(e)
-  }
-  span(start, d)
+  @range.TimeRange::new(start, d)
 }
 
 ///|
@@ -279,14 +350,63 @@ pub fn Graph::range_in_parent(
     Err(e) => return Err(e)
   }
   if !trimmed {
-    Ok(Some(r))
-  } else {
-    let window = match trimmed_range(p) {
+    return Ok(Some(r))
+  }
+  let window = match p.source_range() {
+    Ok(Some(v)) => v
+    Ok(None) => return Ok(Some(r))
+    Err(e) => return Err(e)
+  }
+  if p.schema_name() == "Stack" {
+    let d = if window.duration().to_seconds().unwrap() <
+      r.duration().to_seconds().unwrap() {
+      window.duration()
+    } else {
+      r.duration()
+    }
+    let provisional = match @range.TimeRange::new(window.start(), d) {
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    r.intersection(window)
+    let end = provisional.end_time_exclusive().unwrap()
+    let limit = window.end_time_exclusive().unwrap()
+    let end = if limit.to_seconds().unwrap() < end.to_seconds().unwrap() {
+      limit
+    } else {
+      end
+    }
+    let d = match sub_time(end, window.start()) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+    return match @range.TimeRange::new(window.start(), d) {
+      Ok(v) => Ok(Some(v))
+      Err(e) => Err(e)
+    }
   }
+  let mut r = r
+  if window.start().to_seconds().unwrap() >=
+    r.end_time_exclusive().unwrap().to_seconds().unwrap() ||
+    window.end_time_exclusive().unwrap().to_seconds().unwrap() <=
+    r.start().to_seconds().unwrap() {
+    return Err("invalid_time_range")
+  }
+  if r.start().to_seconds().unwrap() < window.start().to_seconds().unwrap() {
+    r = match
+      @range.from_start_end(window.start(), r.end_time_exclusive().unwrap()) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+  }
+  if r.end_time_exclusive().unwrap().to_seconds().unwrap() >
+    window.end_time_exclusive().unwrap().to_seconds().unwrap() {
+    r = match
+      @range.from_start_end(r.start(), window.end_time_exclusive().unwrap()) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
+  }
+  Ok(Some(r))
 }
 
 ///|
@@ -297,52 +417,60 @@ pub fn Graph::transformed_time(
   from : Array[Int32],
   to : Array[Int32],
 ) -> Result[@time.RationalTime, String] {
-  let mut n = match time.to_seconds() {
-    Ok(v) => v
-    Err(_) => return Err("time_overflow")
-  }
   for path in [from, to] {
     match self.at(path) {
       Err(e) => return Err(e)
       _ => ()
     }
   }
-  for i = from.length(); i > 0; i = i - 1 {
+  if from == to {
+    return Ok(time)
+  }
+  let mut result = time
+  let stop = if from.length() >= to.length() && prefix(from, to.length()) == to {
+    to.length()
+  } else {
+    0
+  }
+  for i = from.length(); i > stop; i = i - 1 {
     let item = self.at(prefix(from, i)).unwrap()
-    let r = match self.range_in_parent(prefix(from, i)) {
-      Ok(Some(r)) => r
+    let source = match trimmed_range(item) {
+      Ok(v) => v.start()
+      Err(e) => return Err(e)
+    }
+    let position = match self.range_in_parent(prefix(from, i)) {
+      Ok(Some(v)) => v.start()
       _ => return Err("invalid_parent_range")
     }
-    let start = if item.schema_name() == "Transition" {
-      0.0
-    } else {
-      match trimmed_range(item) {
-        Ok(r) => r.start().to_seconds().unwrap()
-        Err(e) => return Err(e)
-      }
+    result = match sub_time(result, source) {
+      Ok(v) => v
+      Err(e) => return Err(e)
     }
-    n = n - start + r.start().to_seconds().unwrap()
+    result = match add_time(result, position) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
   }
-  for i = 1; i <= to.length(); i = i + 1 {
+  for i = to.length(); i > stop; i = i - 1 {
     let item = self.at(prefix(to, i)).unwrap()
-    let r = match self.range_in_parent(prefix(to, i)) {
-      Ok(Some(r)) => r
+    let source = match trimmed_range(item) {
+      Ok(v) => v.start()
+      Err(e) => return Err(e)
+    }
+    let position = match self.range_in_parent(prefix(to, i)) {
+      Ok(Some(v)) => v.start()
       _ => return Err("invalid_parent_range")
     }
-    let start = if item.schema_name() == "Transition" {
-      0.0
-    } else {
-      match trimmed_range(item) {
-        Ok(r) => r.start().to_seconds().unwrap()
-        Err(e) => return Err(e)
-      }
+    result = match add_time(result, source) {
+      Ok(v) => v
+      Err(e) => return Err(e)
     }
-    n = n - r.start().to_seconds().unwrap() + start
+    result = match sub_time(result, position) {
+      Ok(v) => v
+      Err(e) => return Err(e)
+    }
   }
-  match @time.RationalTime::new(n * time.rate(), time.rate()) {
-    Ok(t) => Ok(t)
-    Err(_) => Err("time_overflow")
-  }
+  Ok(result)
 }
 
 ///|
@@ -408,14 +536,39 @@ pub fn Graph::visible_range(
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let (head, tail) = match self.handles(path) {
-    Ok(v) => v
-    Err(e) => return Err(e)
+  let mut start = r.start()
+  let mut d = r.duration()
+  if path.length() > 0 {
+    let parent = match self.parent(path) {
+      Ok(Some(v)) => v
+      _ => return Err("invalid_parent")
+    }
+    if parent.schema_name() == "Track" {
+      let a = children(parent).unwrap()
+      let i = path[path.length() - 1]
+      for (neighbor, key) in [(i - 1, "in_offset"), (i + 1, "out_offset")] {
+        if neighbor >= 0 &&
+          neighbor < a.length() &&
+          a[neighbor].schema_name() == "Transition" {
+          let offset = match offset_time(a[neighbor], key) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
+          if key == "in_offset" {
+            start = match sub_time(start, offset) {
+              Ok(v) => v
+              Err(e) => return Err(e)
+            }
+          }
+          d = match add_time(d, offset) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
+        }
+      }
+    }
   }
-  span(
-    r.start().to_seconds().unwrap() - head,
-    r.duration().to_seconds().unwrap() + head + tail,
-  )
+  @range.TimeRange::new(start, d)
 }
 
 ///|

@@ -80,3 +80,11 @@ test "nearest rounding around zero and exact integers" {
   let edge = @time.RationalTime::new(-9007199254740992.0, 24.0).unwrap()
   assert_true(edge.rounded_frames(24.0, NearestAway) is Err(UnsafeInteger))
 }
+
+///|
+test "almost_equal tolerance is measured in the other time rate" {
+  let a = @time.RationalTime::new(24.0, 24.0).unwrap()
+  let b = @time.RationalTime::new(50.0, 48.0).unwrap()
+  assert_false(a.almost_equal(b, delta=1.0))
+  assert_true(b.almost_equal(a, delta=1.0))
+}

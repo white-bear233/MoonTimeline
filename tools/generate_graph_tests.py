@@ -43,7 +43,7 @@ for step in [1,2,3]:
     lines += ['', '///|',f'test "official image sequence step {step}" {{',f'  let seq = @schema.ImageSequence::from_object(@schema.read({raw(seq)}).unwrap()).unwrap()',f'  assert_eq(seq.number_of_images(), {seq.number_of_images_in_sequence()})',f'  near(seq.end_frame().unwrap(), {num(seq.end_frame())})']
     for i in [0,1,seq.number_of_images_in_sequence()-1]:
         lines += [f'  assert_eq(seq.target_url({i}).unwrap(), {q(seq.target_url_for_image_number(i))})', f'  near(seq.presentation_time({i}).unwrap().to_seconds().unwrap(), {num(seq.presentation_time_for_image_number(i).to_seconds())})']
-    lines+=['  assert_true(seq.target_url(-1) is Err(_))','}']
+    lines += [f'  assert_eq(seq.target_url(-1).unwrap(), {q(seq.target_url_for_image_number(-1))})', '}']
 for name in ['internal','nested_trimmed']:
     t=cases()[name];g=t.tracks
     lines += ['', '///|',f'test "official graph mapping {name}" {{',f'  let g = @graph.Graph::new(@schema.read({raw(g)}).unwrap())']

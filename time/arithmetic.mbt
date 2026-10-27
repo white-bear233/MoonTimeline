@@ -37,8 +37,8 @@ pub fn RationalTime::almost_equal(
   other : RationalTime,
   delta~ : Double = 0.0,
 ) -> Bool {
-  match other.rescaled_to(self.rate()) {
-    Ok(t) => (self.value() - t.value()).abs() <= delta
+  match self.rescaled_to(other.rate()) {
+    Ok(t) => (t.value() - other.value()).abs() <= delta
     Err(_) => false
   }
 }

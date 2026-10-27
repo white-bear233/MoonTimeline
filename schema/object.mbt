@@ -107,8 +107,135 @@ fn upgrade(raw : Json, depth : Int32) -> Result[Json, String] {
           }
           for key, default in defaults {
             match result.get(key) {
-              None => result[key] = default
+              None =>
+                result[key] = if current_name == "Marker" && key == "color" {
+                  Json::string("GREEN")
+                } else {
+                  default
+                }
               Some(value) => {
+                let plugin_any = [
+                  "Adapter", "HookScript", "MediaLinker", "SchemaDef", "PluginManifest",
+                ].contains(current_name)
+                if plugin_any {
+                  continue
+                }
+                if current_name == "ImageSequenceReference" &&
+                  ["start_frame", "frame_step", "frame_zero_padding"].contains(
+                    key,
+                  ) {
+                  let text = match value {
+                    Number(n, repr~) =>
+                      match repr {
+                        Some(s) => s
+                        None => n.to_string()
+                      }
+                    _ => return Err("invalid_integer:" + key)
+                  }
+                  let integer = if text.has_prefix("-") {
+                    let n = @string.parse_int64(text) catch {
+                      _ => return Err("invalid_integer:" + key)
+                    }
+                    n.to_int()
+                  } else {
+                    let n = @string.parse_uint64(text) catch {
+                      _ => return Err("invalid_integer:" + key)
+                    }
+                    n.to_int()
+                  }
+                  result[key] = Json::number(integer.to_double())
+                  continue
+                }
+                let elements : Array[Json] = match (key, value) {
+                  ("children" | "effects" | "markers", Array(a)) => a
+                  ("media_references", Object(m)) => m.values().to_array()
+                  _ => []
+                }
+                for element in elements {
+                  let child_name = match split_tag(tag(element)) {
+                    Ok((n, _)) => n
+                    Err(_) => return Err("invalid_element:" + key)
+                  }
+                  let valid = match key {
+                    "effects" =>
+                      ["Effect", "TimeEffect", "LinearTimeWarp", "FreezeFrame"].contains(
+                        child_name,
+                      )
+                    "markers" => child_name == "Marker"
+                    "media_references" =>
+                      [
+                        "MediaReference", "ExternalReference", "MissingReference",
+                        "GeneratorReference", "ImageSequenceReference",
+                      ].contains(child_name)
+                    "children" =>
+                      if current_name == "SerializableCollection" {
+                        ![
+                          "RationalTime", "TimeRange", "TimeTransform", "V2d", "Box2d",
+                          "Color",
+                        ].contains(child_name)
+                      } else {
+                        [
+                          "Composable", "Item", "Composition", "Clip", "Gap", "Track",
+                          "Stack", "Transition",
+                        ].contains(child_name)
+                      }
+                    _ => true
+                  }
+                  if !valid {
+                    return Err("invalid_element:" + key + ":" + child_name)
+                  }
+                }
+                if default is String(_) &&
+                  value is Null &&
+                  current_name != "Color" &&
+                  key != "missing_frame_policy" {
+                  result[key] = Json::string("")
+                  continue
+                }
+                let expected_tag = match key {
+                  "source_range" | "available_range" | "marked_range" =>
+                    "TimeRange.1"
+                  "global_start_time"
+                  | "offset"
+                  | "in_offset"
+                  | "out_offset"
+                  | "start_time"
+                  | "duration" => "RationalTime.1"
+                  "available_image_bounds" => "Box2d.1"
+                  "min" | "max" =>
+                    if current_name == "Box2d" {
+                      "V2d.1"
+                    } else {
+                      ""
+                    }
+                  "tracks" => "Stack.1"
+                  "color" =>
+                    if current_name == "Marker" {
+                      ""
+                    } else {
+                      "Color.1"
+                    }
+                  _ => ""
+                }
+                let nullable = [
+                  "source_range", "available_range", "global_start_time", "available_image_bounds",
+                  "tracks", "color",
+                ].contains(key)
+                if expected_tag != "" {
+                  if nullable && value is Null {
+                    continue
+                  }
+                  if tag(value) != expected_tag {
+                    return Err("invalid_field_type:" + current_name + "." + key)
+                  }
+                }
+                if current_name == "ImageSequenceReference" &&
+                  key == "missing_frame_policy" {
+                  if !(value is String(policy) &&
+                    ["error", "hold", "black"].contains(policy)) {
+                    return Err("invalid_missing_frame_policy")
+                  }
+                }
                 let valid = match (default, value) {
                   (Null, _) => true
                   (String(_), String(_))

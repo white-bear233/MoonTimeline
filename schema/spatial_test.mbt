@@ -35,7 +35,7 @@ test "official color byte packing shorthand and vector normalization" {
   assert_eq(c.to_agbr_integer().unwrap(), 1716269849U)
   assert_eq(
     @schema.Color::from_agbr_integer(1716269849U).to_hex().unwrap(),
-    "#19334c66",
+    "#194c3366",
   )
   assert_eq(
     @schema.Color::from_hex("bad").unwrap().to_hex().unwrap(),

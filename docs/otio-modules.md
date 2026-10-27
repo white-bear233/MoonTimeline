@@ -23,10 +23,12 @@
 
 - 可变 Python 对象及 parent 指针改为不可变对象值和 Graph 路径。`children()` 返回独立数组，列表的 append/extend/reverse/count/index 等操作使用 MoonBit Array，再通过 `with_children` 或 Graph 操作提交。重复挂接会产生独立副本；不会共享一个可变子对象。
 - 所有标准 schema 的数据字段均可通过 `Object.get/with_field` 访问；Marker、Effect、ImageSequence、Color、Box2d 等另有类型化接口。未知字段完整保留，未知类型不猜测时长或播放效果。
-- Python 异常/无效时间哨兵用 `Result` 表达。时间计算类型要求有限值、正帧率和非负区间；序列化层仍保留 OTIO 特殊数值。负缩放导致负区间时显式返回错误。
+- 新增 `opentime` 兼容类型保留官方无效时间、特殊浮点和负区间；原有 `time/range/transform` 是严格编辑类型，拒绝无效/非有限时间和负时长。异常通过 `Result` 表达，尚未逐一匹配 Python 异常类及消息。
 - 上游结构坐标转换忽略 TimeEffect；`graph` 保持该语义。`timeline` 的播放映射是本库明确的扩展契约：以 source_start 为锚点，启用的线性效果依次相乘；未知时间曲线返回无法求值。展示时长保持 OTIO 的 source_range.duration。
 - 倒放布局包含方向可能为 `(start,end]`，通过 `start_inclusive/end_inclusive` 和查询 API 表达。定格中的转场没有唯一切点，`cut_seconds=None`，CLI 输出 null。
 - `Registry.discover` 接收宿主提供的路径、读取回调及 Resolver；不直接执行清单中的 Python 脚本。已有 Python 插件需要宿主桥接或 MoonBit 实现。
+
+本轮逐 API 差分和覆盖缺口见 [差分报告](api-conformance.md)，包含 3,965 个新增用例及逐成员证据。
 
 ## 当前验收边界
 

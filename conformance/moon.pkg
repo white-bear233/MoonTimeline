@@ -1,4 +1,6 @@
 import {
+  "white-bear233/moontimeline/opentime",
+  "white-bear233/moontimeline/otiojson",
   "white-bear233/moontimeline/schema",
   "white-bear233/moontimeline/graph",
   "white-bear233/moontimeline/algorithms",

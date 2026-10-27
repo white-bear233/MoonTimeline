@@ -1,4 +1,12 @@
 ///|
+fn component(object : Object, field : String) -> Result[Double, String] {
+  match object.get(field) {
+    Some(Number(n, ..)) => Ok(n)
+    _ => Err("invalid_spatial_component")
+  }
+}
+
+///|
 pub(all) struct V2d {
   x : Double
   y : Double
@@ -22,11 +30,11 @@ pub fn V2d::from_json(raw : Json) -> Result[V2d, String] {
   if object.schema_name() != "V2d" {
     return Err("not_a_vector")
   }
-  let x = match number(object, "x") {
+  let x = match component(object, "x") {
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let y = match number(object, "y") {
+  let y = match component(object, "y") {
     Ok(v) => v
     Err(e) => return Err(e)
   }
@@ -144,19 +152,19 @@ pub fn Color::from_json(raw : Json) -> Result[Color, String] {
   if o.schema_name() != "Color" {
     return Err("not_a_color")
   }
-  let r = match number(o, "r") {
+  let r = match component(o, "r") {
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let g = match number(o, "g") {
+  let g = match component(o, "g") {
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let b = match number(o, "b") {
+  let b = match component(o, "b") {
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  let a = match number(o, "a") {
+  let a = match component(o, "a") {
     Ok(v) => v
     Err(e) => return Err(e)
   }

@@ -210,7 +210,10 @@ pub fn ImageSequence::target_url(
   self : ImageSequence,
   index : Int32,
 ) -> Result[String, String] {
-  if index < 0 || index >= self.number_of_images() {
+  if index >= self.number_of_images() {
+    return Err("image_index")
+  }
+  if self.number_of_images() == 0 {
     return Err("image_index")
   }
   let frame = integer(self.object, "start_frame").unwrap().to_double() +
@@ -244,7 +247,7 @@ pub fn ImageSequence::presentation_time(
   self : ImageSequence,
   index : Int32,
 ) -> Result[@time.RationalTime, String] {
-  if index < 0 || index >= self.number_of_images() {
+  if index >= self.number_of_images() {
     return Err("image_index")
   }
   let available = match self.available_range() {

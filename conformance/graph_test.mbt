@@ -970,7 +970,7 @@ test "official image sequence step 1" {
     seq.presentation_time(23).unwrap().to_seconds().unwrap(),
     10.958333333333334,
   )
-  assert_true(seq.target_url(-1) is Err(_))
+  assert_eq(seq.target_url(-1).unwrap(), "file:///frames/shot.-0003.exr")
 }
 
 ///|
@@ -994,7 +994,7 @@ test "official image sequence step 2" {
     seq.presentation_time(11).unwrap().to_seconds().unwrap(),
     10.916666666666666,
   )
-  assert_true(seq.target_url(-1) is Err(_))
+  assert_eq(seq.target_url(-1).unwrap(), "file:///frames/shot.-0004.exr")
 }
 
 ///|
@@ -1012,7 +1012,7 @@ test "official image sequence step 3" {
   near(seq.presentation_time(1).unwrap().to_seconds().unwrap(), 10.125)
   assert_eq(seq.target_url(7).unwrap(), "file:///frames/shot.0019.exr")
   near(seq.presentation_time(7).unwrap().to_seconds().unwrap(), 10.875)
-  assert_true(seq.target_url(-1) is Err(_))
+  assert_eq(seq.target_url(-1).unwrap(), "file:///frames/shot.-0005.exr")
 }
 
 ///|

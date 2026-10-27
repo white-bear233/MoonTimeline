@@ -21,6 +21,8 @@ pub fn tag(Json) -> String
 
 pub fn time_json(@time.RationalTime) -> Json
 
+pub fn vector_limits() -> (Double, Double, Double, Double, Int32)
+
 pub fn write(Object) -> Result[String, String]
 
 // Errors
@@ -48,13 +50,13 @@ pub(all) struct Color {
 pub fn Color::from_agbr_integer(UInt32) -> Self
 pub fn Color::from_float_list(Array[Double], name? : String) -> Result[Self, String]
 pub fn Color::from_hex(String) -> Result[Self, String]
-pub fn Color::from_int_list(Array[Int32], name? : String) -> Result[Self, String]
+pub fn Color::from_int_list(Array[Int32], name? : String, bit_depth? : Int32) -> Result[Self, String]
 pub fn Color::from_json(Json) -> Result[Self, String]
 pub fn Color::named(String) -> Result[Self, String]
 pub fn Color::to_agbr_integer(Self) -> Result[UInt32, String]
 pub fn Color::to_float_list(Self) -> Array[Double]
 pub fn Color::to_hex(Self) -> Result[String, String]
-pub fn Color::to_int_list(Self) -> Result[Array[Int32], String]
+pub fn Color::to_int_list(Self, bit_depth? : Int32) -> Result[Array[Int32], String]
 pub fn Color::to_json(Self) -> Json
 
 pub struct Effect {
@@ -100,6 +102,7 @@ pub fn Object::from_json(Json) -> Result[Self, String]
 pub fn Object::generator_parameters(Self) -> Result[Json, String]
 pub fn Object::get(Self, String) -> Json?
 pub fn Object::image_bounds(Self) -> Result[Box2d?, String]
+pub fn Object::is_missing_reference(Self) -> Bool
 pub fn Object::is_unknown(Self) -> Bool
 pub fn Object::markers(Self) -> Result[Array[Marker], String]
 pub fn Object::markers_in_range(Self, @range.TimeRange) -> Result[Array[Marker], String]
@@ -130,13 +133,16 @@ pub(all) struct V2d {
 }
 pub fn V2d::add(Self, Self) -> Self
 pub fn V2d::cross(Self, Self) -> Double
+pub fn V2d::divide_components(Self, Self) -> Self
 pub fn V2d::dot(Self, Self) -> Double
 pub fn V2d::equal_with_error(Self, Self, Double, relative? : Bool) -> Bool
 pub fn V2d::from_json(Json) -> Result[Self, String]
 pub fn V2d::length(Self) -> Double
 pub fn V2d::length_squared(Self) -> Double
 pub fn V2d::multiply(Self, Double) -> Self
+pub fn V2d::multiply_components(Self, Self) -> Self
 pub fn V2d::normalized(Self, reject_zero? : Bool) -> Result[Self, String]
+pub fn V2d::normalized_non_null(Self) -> Self
 pub fn V2d::subtract(Self, Self) -> Self
 pub fn V2d::to_json(Self) -> Json
 

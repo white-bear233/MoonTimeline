@@ -51,9 +51,10 @@ jobs:
           python tools/generate_opentime_tests.py
           python tools/generate_schema_defaults.py
           python tools/generate_graph_tests.py
+          python tools/generate_api_tests.py
           moon fmt conformance
           moon fmt schema
-          git diff --exit-code -- conformance/oracle_test.mbt conformance/opentime_test.mbt conformance/graph_test.mbt schema/defaults.mbt schema/defaults_test.mbt schema/color_names.mbt schema/required_fields.mbt
+          git diff --exit-code -- conformance docs/api-conformance-cases.json docs/api-conformance-coverage.json schema/defaults.mbt schema/defaults_test.mbt schema/color_names.mbt schema/required_fields.mbt
       - run: python tools/check_roundtrip.py --target ${{ matrix.target }}
       - run: python tools/check_edits.py --target ${{ matrix.target }}
       - if: matrix.target == 'js'
@@ -62,6 +63,7 @@ jobs:
           node --test tests/cli.test.mjs tests/regression.test.mjs
           python tools/check_review.py
           python tools/check_bundles.py
+          python tools/check_api_files.py
           node --check demo/app.mjs
           node --check tools/serve.mjs
       - if: matrix.target == 'js'
