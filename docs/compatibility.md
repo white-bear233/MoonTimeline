@@ -1,41 +1,16 @@
-# OTIO 兼容状态（0.1.3 仓库修订）
+# OTIO 兼容状态（0.2.0 仓库版本）
 
-参考 [OpenTimelineIO v0.18.1](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/tree/v0.18.1)，固定提交 44236713c1db295a6ffc66189ae98dbdfd0cb9c4，Apache-2.0。代码独立用 MoonBit 重写，未复制上游源码；Python 仅用于测试，不进入产品运行时。
+完整模块、入口、测试证据与 MoonBit API 差异见 [模块索引](otio-modules.md)。参考固定为 OTIO v0.18.1；全部核心层已有实现，但尚未完成上游整套测试逐例迁移与逐成员兼容认证。
 
-完整实现是正式项目目标，当前尚未完成。范围与分阶段验收见 [OTIO 完整实现路线图](otio-roadmap.md)。以下区分保留、计算、编辑；原样保留不能计作完整实现。
+- 任意标准根对象、对象集合及 33 种 schema/值类型由 `schema` 提供。原有 `otio.read` 仍以 Timeline 为根，保持原有编辑 API 的严格约束。
+- 转场的自身时长不推进内部轨道游标；完整/可见范围、相邻片段限制、直接编辑和嵌套媒体余量校验均已实现。
+- 片段与组合线性变速、倒放、定格传播至素材坐标；启用的仿射效果倍率相乘。未知时间曲线拒绝求值。结构坐标查询保持上游忽略 TimeEffect 的规则。
+- Marker 有类型化编辑、范围筛选及宿主/父坐标查询。Metadata、Effects、扩展字段独立复制；原工程不随编辑结果变动。
+- 图像序列、生成器、媒体选择、颜色和图像边界已有可调用接口，不再只依赖原始 JSON 保留。
+- OTIO JSON 保留 Inf/NaN 和精确数值词法；计算类型仍要求有效有限时间。版本降级必须显式请求；Clip.2 降为 Clip.1 仅保留活动引用，与上游一致。
+- 三种内置格式和插件注册/Manifest/发现回调已实现。归档核心不自动访问磁盘；宿主提供文件内容及模块解析回调。
 
-| 能力 | 保留/读写 | 计算 | 编辑 |
-|---|---|---|---|
-| Timeline.1 / Stack.1 / Track.1 | 支持 | 多轨、窗口与嵌套 | 按路径修改窗口，根轨道不能 split |
-| Clip.2 / Gap.1 | 支持 | 时长、布局、素材坐标 | split / trim / insert_gap |
-| Clip.1 / Sequence.1 | 读入升级 | 按当前结构 | 写回 Clip.2 / Track.1 |
-| RationalTime.1 / TimeRange.1 | 支持 | 基础运算、转换、半开区间 | 通过模型 API |
-| ExternalReference.1 / MissingReference.1 | 支持 | 活动媒体边界 | 随宿主复制保留 |
-| Transition.1 | 原始 JSON + 类型视图 | 完整/可见范围、半开查询、相邻约束、片段素材余量 | 随轨道保留，不作为 split/trim 目标 |
-| LinearTimeWarp.1 / FreezeFrame.1 | 原始 JSON + 倍率读取 | 单片段播放映射、素材边界；不改变展示时长 | split/trim 同步修正素材起点 |
-| Track/Stack 时间效果、多个或未知时间效果 | 保留 | 明确拒绝 | 拒绝，避免错误映射 |
-| Marker.2 / 历史或未知 Marker 字段 | 完整保留 | 仅集合形状检查，无可见性查询 | 不移位、不删范围外标记，拆分独立复制；无独立编辑接口 |
-| Metadata / Effect.1 / Color / 宿主扩展 | 标准 JSON 完整保留 | 视觉效果不改变时间 | 深复制保留，不渲染效果 |
-| GeneratorReference / ImageSequenceReference | 原始 JSON 保留 | 有已知范围可判时长；特定类型 API 未实现 | 随宿主保留 |
-| 未知条目 | 原始 JSON 保留 | unsupported_item | 拒绝 |
-| Inf / Infinity / NaN 等特殊数值 | 当前拒绝，invalid_json | 不计算 | 不编辑，不再改成 null |
-| 任意根对象、SerializableCollection、OTIOZ/OTIOD、插件机制 | 待实现 | 待实现 | 待实现 |
-
-公开读取器当前以 Timeline 为根，Track.kind 限 Video/Audio；Gap 必须给出 source_range；输入大小/深度限制见 [读取文档](reader.md)。这些是当前限制，也列入完整实现验收，不能据此声称覆盖全部合法 OTIO。
-
-## 上游样例的实际意义
-
-本轮 tools/check_external_corpus.mjs 对固定版本 13 个原始样例的结果：可读 12/13，布局返回 11/13，可写回 12/13，完整检查报告写回稳定 12/13。
-
-- big_int.otio 含 OTIO 允许的特殊数值，明确拒绝；这是兼容缺口，不能称上游文件非法。
-- nested_example.otio 含组合变速，读写保留，计算/编辑明确拒绝。
-- 旧版 13/13 的指标只检查布局无报错，既忽略变速，也会改写特殊值；不是语义正确率。
-- 新增的 8 个结构差分测试比较官方真实范围、时长、嵌套窗口与素材起点；播放映射使用独立契约测试，因为上游结构 API 不求值时间效果。
-- tools/check_review.py 对 21 个真实编辑导出检查官方往返与所有 JSON 字段；自有扩展字段另外由 MoonBit 回归测试验证。
-
-## 待补的语义
-
-组合变速和嵌套组合转场的递归余量校验、Marker 类型化 API/可见性、完整 schema/API/算法与适配器均在路线图。未知媒体可用范围不视作越界，也不能视为已验证可交付。已知越界按本库质检策略报 Error，上游 OTIO 自身允许保存这类工程。
+13 个官方样例均可读取、返回布局、写回并稳定往返。该指标证明样例路径能运行，不能替代语义测试。另有官方时间/算法差分、21 个实际编辑导出、媒体包双向互读和回归验证。
 
 ## 生态中的相近库（发布前查重，2026-10-21）
 
@@ -52,17 +27,16 @@
 
 ## 复现
 
-安装 tools/requirements.txt 中固定的 opentimelineio==0.18.1 后：
-
 ```sh
-python tools/oracle.py --check
-python tools/generate_semantic_tests.py
-moon fmt conformance
+python -m pip install -r tools/requirements.txt
+moon update
 moon test --target js
 moon test --target wasm-gc
 node tools/build-js.mjs
 python tools/check_review.py
+python tools/check_bundles.py
+python tools/audit_api.py --check
 node tools/check_external_corpus.mjs
 ```
 
-CI 对生成的结构预期执行 git diff 检查，防止基线随实现悄悄改动。
+Native 核心与原有文件 CLI 在 Linux CI 中运行。0.2.0 尚未上传 Mooncakes，`moon add` 的已发布版本不包含本轮全部增量。

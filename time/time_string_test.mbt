@@ -23,3 +23,17 @@ test "official time string formatting and parsing boundaries" {
     assert_true(@time.from_time_string(text, 24.0) is Err(_))
   }
 }
+
+///|
+test "time convenience preserves representation and nearest rate formatting" {
+  let a = @time.RationalTime::new(24.0, 24.0).unwrap()
+  let b = @time.RationalTime::new(30.0, 30.0).unwrap()
+  assert_false(a.strictly_equal(b))
+  assert_true(a.almost_equal(b))
+  assert_eq(a.value_rescaled_to(48.0).unwrap(), 48.0)
+  assert_eq(@time.RationalTime::new(-1.5, 24.0).unwrap().round().value(), -2.0)
+  assert_eq(
+    a.to_nearest_timecode(rate=23.98, drop_frame=Some(false)).unwrap(),
+    a.to_timecode(rate=24000.0 / 1001.0, drop_frame=Some(false)).unwrap(),
+  )
+}

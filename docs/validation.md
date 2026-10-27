@@ -1,3 +1,26 @@
+# 0.2.0 模块验收（2026-10-27）
+
+工具链 MoonBit 0.10.16+b1a0e846e，官方参照 opentimelineio==0.18.1。运行时依赖新增纯 MoonBit `moonbit-community/flate@0.9.0`。
+
+| 验证 | 结果 |
+|---|---|
+| 本地 JS / Wasm GC | 各 489 项 MoonBit 测试通过；fmt/info/check/build 通过 |
+| 本地 Native | 静态检查通过；Windows 无 MSVC，运行测试由 Linux CI 执行 |
+| 官方生成基线 | 33 种默认对象、21 组必需字段、140 个时间差分、73 个算法/图/图像序列差分；CI 检查生成结果无漂移 |
+| 实际编辑导出 | 21 例官方读取、写回、完整 JSON 保留通过 |
+| OTIOZ / OTIOD | 官方和 MoonBit 双向读写、媒体字节一致、中文/空格/Windows 路径、危险归档拒绝通过 |
+| 原有 CLI / 回归 | 8 项通过，包括 120 个确定性拆分位置；12 个 CLI 工程对照通过 |
+| 上游原始语料 | 13/13 可读、布局返回、可写回、报告稳定；不等同全部语义兼容 |
+| API 盘点 | 固定版本 33 个类及 7 个公开算法；清单可复现，不作为测试通过率 |
+
+实现提交 `2ce89a4` 的 [CI](https://github.com/white-bear233/MoonTimeline/actions/runs/40513258737) 已通过 oracle、JS、Native、Wasm GC 四项（当时核心测试 487 项）。最终仓库新增两项回归并修正负数半帧舍入，最新执行记录以 [Actions](https://github.com/white-bear233/MoonTimeline/actions) 对应提交为准。
+
+模块实现与公开 API 适配见 [otio-modules.md](otio-modules.md)。还未逐例移植上游整套测试，不能将定向验证写成“全部上游测试通过”。0.2.0 尚未上传 Mooncakes。
+
+---
+
+以下为历史验收记录，测试数量与兼容范围按当时版本解释。
+
 # 0.1.3 初审整改验证（2026-10-27）
 
 基线 1d3e324 / 0.1.2。测试工具链 MoonBit 0.10.16+b1a0e846e、Python 3.11、opentimelineio==0.18.1。

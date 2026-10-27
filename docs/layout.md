@@ -1,4 +1,4 @@
-# 布局、转场与播放坐标（0.1.3）
+# 布局、转场与播放坐标（0.2.0）
 
 `timeline.layout` 返回叶片段 items、转场 transitions、轨道时长和总时长。Track 顺序排布，Stack 同时排布；每层 source_range 起点分别计入坐标转换。global_start_time 是显示标签，不偏移局部布局。禁用对象仍占结构时间并携带 enabled。
 
@@ -16,10 +16,10 @@
 
 `media_seconds = source_start_seconds + (timeline_seconds - placement_start_seconds) * time_scalar`
 
-支持单个 LinearTimeWarp.1（正向、慢放、负数倒放、零速）或 FreezeFrame.1（0）。倒放以 source_range.start_time 为第一个素材位置；例如起点 10 秒、倍率 -1，播放 1.5 秒后访问 8.5 秒。定格始终访问起点；不将时长除以倍率。多个时间效果的顺序不明确，返回 ambiguous_time_effects；视觉 Effect.1 保留但不改坐标；未知效果拒绝求值。
+支持 LinearTimeWarp.1（正向、慢放、负数倒放、零速）或 FreezeFrame.1（0）。倒放以 source_range.start_time 为第一个素材位置；例如起点 10 秒、倍率 -1，播放 1.5 秒后访问 8.5 秒。定格始终访问起点；不将时长除以倍率。多个启用的线性时间效果以 source_start 为锚点依次相乘，禁用效果跳过；视觉 Effect.1 保留但不改坐标；未知效果拒绝求值。
 
 Placement.source.start 是可见部分的素材起点，duration 是展示时长，不能把 source.end_seconds 当作变速后的素材末端。time_scalar 与 source_at 才表示播放映射。OTIO 的 transformed_time 是不计算效果的结构坐标变换，播放映射是本库明确约定的扩展，不假称二者相同。
 
-组合自身变速尚未实现，返回 unsupported_composition_retime，不当作 1 倍速。未知时长、溢出也返回错误。
+Track/Stack 自身变速递归传播；经过各层裁剪窗口后累乘倍率，定格选择相应子项并固定采样。未知时长、未知时间曲线与数值溢出返回错误。
 
-items_at、transitions_at、Placement.source_at 使用半开区间；转场和片段分别查询，不提供混合像素或渲染。零时长对象不命中时间点查询。
+正向布局为 [start,end)，倒放穿过片段边界时可能为 (start,end]；使用 start_inclusive/end_inclusive 明确端点，items_at、transitions_at、source_at 按这些标志查询。定格转场的 cut_seconds=None，不能伪造唯一切点。转场和片段分别查询，不渲染混合像素。

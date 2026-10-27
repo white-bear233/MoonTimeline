@@ -4,7 +4,7 @@
 
 **1．项目名称**：MoonTimeline——MoonBit 原生 OpenTimelineIO 剪辑时间线库。
 
-**2．项目简介**：用 MoonBit 实现剪辑工程的读取、交换、时间计算、校验与编辑，为 MoonBit 应用接入影视后期工作流提供基础库。运行时不依赖 Python/C++ OTIO；编解码与视频渲染交给外部工具。以 **OTIO v0.18.1 完整公开能力**为建设目标，当前已完成部分功能并持续补齐，不将核心子集作为最终范围。
+**2．项目简介**：用 MoonBit 实现剪辑工程的读取、交换、时间计算、校验与编辑，为 MoonBit 应用接入影视后期工作流提供基础库。运行时不依赖 Python/C++ OTIO；编解码与视频渲染交给外部工具。以 **OTIO v0.18.1 完整公开能力**为建设目标，当前各核心模块已实现并持续进行兼容验收，不将核心子集作为最终范围。
 
 **3．项目方向与通用性**：媒体工程数据基础设施。提供独立于界面及文件系统的 MoonBit API，适用于 CLI、Web 与原生工具，可供剪辑器、审片系统、自动质检和批处理服务复用。
 
@@ -16,11 +16,11 @@
 
 **5．核心功能与完整实现计划**：
 
-- 已实现：基础时间/区间、OTIO 读写、嵌套与裁剪、转场完整及可见范围/相邻约束、片段线性变速/倒放/定格映射、原子编辑。Marker 坐标及 Metadata、Effects、扩展字段在编辑后保留并独立复制，禁止静默丢数据。
-- 后续按阶段覆盖：全部 OTIO schema（含图像序列、生成素材、Marker、Effect、对象集合）、完整 opentime/core 与算法、组合变速和嵌套转场余量、版本迁移及特殊数值无损读写、otio_json/otioz/otiod 和插件机制。以官方差分测试、完整字段往返及三后端回归逐项验收，清单见 [完整实现路线图](https://github.com/white-bear233/MoonTimeline/blob/main/docs/otio-roadmap.md)。
+- 已实现：时间/区间/变换、33 种标准对象与值类型、完整对象图查询、7 个上游公开算法、任意根与版本迁移、OTIOZ/OTIOD 及插件机制。转场完整/可见范围、相邻约束与嵌套媒体余量，组合和片段变速/倒放/定格映射均有实现。编辑保留 Marker、Metadata、Effects 和扩展字段。
+- 完整验收：以 OTIO v0.18.1 的全部公开 schema/core/opentime/algorithms、内置适配器和插件机制为范围，持续完成逐 API 合法/边界/异常差分、真实工程互读和三后端验证；当前定向测试通过不等于全部上游测试通过。见 [完整范围及验收清单](https://github.com/white-bear233/MoonTimeline/blob/main/docs/otio-roadmap.md)。
 
 **6．项目性质**：参考已有开源项目的独立 MoonBit 重写；不是简单封装上游运行库。
 
 **7．参考与许可**：[OpenTimelineIO v0.18.1](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/tree/v0.18.1)，Apache-2.0；本项目同为 Apache-2.0，现有代码独立实现，未复制上游源码。
 
-**8．仓库与有效提交**：[white-bear233/MoonTimeline](https://github.com/white-bear233/MoonTimeline)。本轮修订前已有 21 次提交，涵盖模型、读写、计算、编辑、工具、测试及文档，超过 10 次要求；本轮增加实际语义修复、回归验证及完整实施计划，不以空提交、重复或无意义拆分凑数。[提交历史](https://github.com/white-bear233/MoonTimeline/commits/main/)。
+**8．仓库与有效提交**：[white-bear233/MoonTimeline](https://github.com/white-bear233/MoonTimeline)。已有超过 10 次提交，涵盖模型、读写、计算、编辑、算法、归档、插件、工具、测试及文档；本轮增加实际模块实现与官方回归验证，不以空提交、重复或无意义拆分凑数。[提交历史](https://github.com/white-bear233/MoonTimeline/commits/main/)。

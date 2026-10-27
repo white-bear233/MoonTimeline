@@ -77,3 +77,33 @@ test "timeline trim and top clip preserve source project" {
   )
   assert_eq(@schema.write(t).unwrap(), before)
 }
+
+///|
+test "recursive graph time search ranges and image bounds" {
+  let g = @graph.Graph::new(object_fixture("internal"))
+  assert_eq(g.child_at_time([0], seconds(4.0)).unwrap(), Some([0, 0, 1]))
+  assert_eq(
+    g.child_at_time([0], seconds(4.0), shallow=true).unwrap(),
+    Some([0, 0]),
+  )
+  assert_eq(g.children_in_range([0, 0], span(0.0, 1.0)).unwrap(), [[0, 0, 0]])
+  assert_eq(g.ranges_of_all_children([0, 0]).unwrap().length(), 3)
+  assert_eq(g.tracks("Video").unwrap().length(), 1)
+  let clip = g.at([0, 0, 0]).unwrap()
+  let box : @schema.Box2d = {
+    min: { x: 0.0, y: 0.0, },
+    max: { x: 1920.0, y: 1080.0, },
+  }
+  let media = clip.active_media().unwrap().with_image_bounds(Some(box)).unwrap()
+  let changed = clip
+    .with_media_references({ "DEFAULT_MEDIA": media }, "DEFAULT_MEDIA")
+    .unwrap()
+  let result = g.replace([0, 0, 0], changed).unwrap()
+  assert_eq(
+    @graph.available_image_bounds(result.at([0]).unwrap()).unwrap().unwrap().max.x,
+    1920.0,
+  )
+  assert_true(
+    @graph.available_image_bounds(g.at([0]).unwrap()).unwrap() is None,
+  )
+}

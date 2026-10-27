@@ -1,6 +1,6 @@
 name = "white-bear233/moontimeline"
 
-version = "0.1.3"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 keywords = [ "otio", "timeline", "video" ]
 
-description = "Native MoonBit OpenTimelineIO implementation in progress: timeline semantics, diagnostics and atomic edits"
+description = "MoonBit OTIO schemas, timeline semantics, algorithms, bundles and plugins"
 
 preferred_target = "js"
 

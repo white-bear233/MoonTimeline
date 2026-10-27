@@ -1,3 +1,28 @@
+# 0.2.0 新增对象、算法与媒体包命令
+
+先执行 `moon update` 和 `node tools/build-js.mjs`。
+
+```sh
+node cmd/moontimeline.mjs schemas
+node cmd/moontimeline.mjs convert input.otio --output normalized.otio
+node cmd/moontimeline.mjs pack input.otio --output delivery.otioz
+node cmd/moontimeline.mjs pack input.otio --output delivery.otiod --policy missing
+node cmd/moontimeline.mjs unpack delivery.otioz --output unpacked
+node cmd/moontimeline.mjs flatten input.otio --output flattened.otio
+node cmd/moontimeline.mjs filter input.otio --prune Transition --output filtered.otio
+node cmd/moontimeline.mjs find input.otio --schema Clip
+node cmd/moontimeline.mjs trim-range input.otio --start 2 --duration 5 --output trimmed.otio
+node cmd/moontimeline.mjs expand-transitions track.otio --output expanded.json
+```
+
+时间参数为秒；展开转场的输入为 Track 根。转换支持任意标准对象、集合和普通 JSON 根；filter 的 prune 以 schema 名称指定，逗号分隔。pack/convert 可按 `.otioz` 或 `.otiod` 输出包。策略 `error`（默认）、`missing`、`all-missing` 分别要求本地媒体、缺失时转 MissingReference、全部转 MissingReference。
+
+目标文件/目录必须不存在。解包在创建目录前先验证所有路径，不创建链接、不联网下载媒体。带媒体的 OTIOZ 导出裸 JSON 会被拒绝，请 unpack 保留媒体及相对路径。核心归档总量默认 256 MiB；Node 桥接的 JSON 信封还受 16 MB 文本限制，适用于小型交换包，大媒体宿主应直接使用 `adapters` 的字节 API。
+
+这些新增文件命令属于 Node 宿主；Native CLI 当前保留下面的旧命令集。新增归档/算法核心本身支持三个后端，不能把此处 Node 文件命令误写为已接入 Native CLI。
+
+---
+
 # 命令行（第 11 步）
 
 Windows 快速运行：先 `node tools/build-js.mjs`，再 `node cmd/moontimeline.mjs inspect fixtures/valid/gap_clip.otio`。

@@ -6,21 +6,19 @@
 
 ## 能力
 
-- **工程数据保留**：旧格式 Clip.1、Sequence.1 读入后升级；标准 JSON 的未知字段与条目保留。暂不能无损读取的特殊数值明确拒绝，不悄悄改成 null。
-- **裁剪与嵌套**：轨道/Stack 的 `source_range` 作为视窗参与布局，嵌套 Stack/Track 递归计算并把坐标映射到父级；按路径寻址编辑，组合的 trim 只改写窗口。
-- **转场与变速**：计算转场完整/可见范围、相邻约束与素材余量；支持片段线性变速、慢放、倒放和定格的素材映射。
-- **标记与元数据**：编辑保留 Marker 宿主坐标、Metadata、效果和扩展字段；两段及原工程不共享可变容器。
-- **语义导出**：导出的工程由官方 OTIO 0.18.1 读取验证，往返后 JSON 完整一致。
-- **时间与区间**：`RationalTime`（value/rate 双精度）、帧率转换不偷偷取整、舍入策略由调用者选择；半开区间、交集、裁剪。
-- **布局与查询**：轨道累计位置、工程总时长（取最长轨道）、时间点查询、素材位置映射、嵌套条目路径。
-- **诊断**：区分确定错误、警告与信息不足，素材可用范围缺失只提示无法验证，不误报越界。
-- **原子编辑**：拆分、顺移裁剪、插入 Gap；任意层级可按路径寻址，成功返回独立工程，失败时原工程保持不变。
+- 时间、区间和变换：RationalTime / TimeRange / TimeTransform、SMPTE/drop-frame、时间字符串及区间关系。
+- 标准对象：33 种 schema/时间/空间值，任意根与对象集合，Marker、Effect、图像序列、生成器、颜色与图像边界。
+- 对象图与播放：父子路径、查询、结构坐标转换；嵌套 Track/Stack 变速、倒放和定格，转场范围、相邻约束及递归素材余量。
+- 编辑与算法：split/trim/gap、直接编辑转场，以及上游全部 7 个公开 algorithms 入口；字段和原工程独立保留。
+- 无损交换：未知字段/类型、NaN/Inf、精确数值词法、旧 schema 升级及显式版本降级。
+- 内置适配器：OTIO JSON、OTIOZ、OTIOD，媒体打包、路径重定位、压缩和输入边界检查。
+- 扩展机制：适配器、四类钩子、媒体链接器、自定义 schema、版本清单、插件 Manifest 和宿主发现回调。
 
-本轮 193 项 MoonBit 测试在 JS 与 Wasm GC 上通过；Linux Native 由 CI 验证。新增 8 个官方结构差分测试，21 个实际编辑导出通过官方互读及完整 JSON 检查。见 [整改对照](docs/review-response.md) 和 [验证记录](docs/validation.md)。
+本轮 489 项 MoonBit 测试；官方时间/算法差分、21 个实际编辑导出、13 个上游样例和 OTIOZ/OTIOD 双向互读均纳入验证。各模块入口、证据和差异见 [模块索引](docs/otio-modules.md)；最新三后端执行结果见 [验证记录](docs/validation.md)。这些结果不等于上游全部 API 已完成兼容认证。
 
 ## 安装
 
-本轮仓库修订为 0.1.3，尚未发布到 Mooncakes；`moon add` 获取已发布版本，本轮功能请先使用仓库源码验证。
+本轮仓库修订为 0.2.0，尚未发布到 Mooncakes；`moon add` 获取已发布版本，本轮功能请先使用仓库源码验证。
 
 ```sh
 moon add white-bear233/moontimeline
@@ -60,15 +58,15 @@ match result {
 
 | 包 | 职责 |
 |---|---|
-| `time` | RationalTime、秒数、帧率转换、显式舍入 |
-| `range` | 半开区间、交集、裁剪、边界检查 |
-| `model` | 时间线模型、转场类型视图、片段变速及素材边界 |
-| `otio` | OTIO JSON 读写与保留（当前范围见兼容表） |
-| `timeline` | 轨道布局、时长、时间点与素材位置查询 |
-| `validate` | 结构化诊断（错误 / 警告 / 未知） |
-| `edit` | 拆分、顺移裁剪、插入 Gap |
-| `cmd` | 命令行入口，共享 MoonBit 操作接口 |
-| `demo` | 浏览器演示（导入、编辑、撤销、下载） |
+| `time` / `range` / `transform` | 时间、区间关系、时码与坐标变换 |
+| `schema` / `graph` | 标准对象、字段/媒体/标记 API、不可变对象图 |
+| `algorithms` | 7 个上游公开算法入口 |
+| `otiojson` | OTIO 数值方言、任意根、无损词法、深复制 |
+| `adapters` / `plugins` | OTIOZ/OTIOD、媒体包、插件与版本清单 |
+| `model` / `otio` | 兼容原有 Timeline 编辑入口 |
+| `timeline` / `validate` | 布局、播放映射、转场和素材约束 |
+| `edit` | 拆分、裁剪、Gap 与转场编辑 |
+| `cmd` / `demo` | 文件命令行与浏览器演示 |
 
 ## 命令行与浏览器演示
 
@@ -82,15 +80,13 @@ node tools/serve.mjs   # http://127.0.0.1:4173/demo/index.html
 
 ## 兼容边界
 
-- 参考上游固定为 v0.18.1（commit `44236713c1db295a6ffc66189ae98dbdfd0cb9c4`，Apache-2.0）。
-- 支持 `RationalTime.1`、`TimeRange.1`、`Timeline.1`、`Stack.1`、`Track.1`、`Sequence.1`、`Clip.1`、`Clip.2`、`Gap.1`、`ExternalReference.1`、`MissingReference.1`。
-- 转场有自身时长与范围，不推进内部轨道游标；首尾转场按上游规则计入轨道可用时长。
-- 单片段时间效果参与播放映射；未知时间效果、组合变速保留但拒绝计算和编辑。Marker 直接编辑与可见性查询仍在计划内。
-- 轨道/Stack 的 `source_range` 裁剪与嵌套组合参与布局；组合的编辑只改写窗口，内部内容保持原样。
-- 其它未知节点保留原文，布局报 `unsupported_item`，不猜测。
-- 媒体边界未知时只给提示，不误判越界；样例由 `tools/oracle.py` 原创构造，媒体路径均为占位符。
+参考上游固定为 v0.18.1（commit `44236713c1db295a6ffc66189ae98dbdfd0cb9c4`，Apache-2.0）。模块已有实现，**尚未完成上游整套测试逐例迁移及逐成员异常行为认证**，不标称 100% OTIO 兼容。
 
-完整的三档能力表（解析 / 计算 / 编辑）与降级行为见 [兼容说明](docs/compatibility.md)。
+`schema`/`graph` 使用不可变对象与路径表达父子关系；计算类型以 `Result` 拒绝无效时间哨兵，序列化层保留特殊数值。结构坐标变换与播放映射分别提供。未知时间曲线只保留，不猜测；外部媒体可用范围不明时给出提示。
+
+新文件归档命令由 Node 宿主连接纯 MoonBit 核心；Native 文件 CLI 保留原有命令集。已有 Python 插件需桥接或重写回调，第三方 AAF/FCPXML/EDL 和编解码不属于本轮内置模块。
+
+详见 [兼容说明](docs/compatibility.md)、[API 与验收索引](docs/otio-modules.md) 和 [第三方许可](THIRD_PARTY_NOTICES.md)。
 
 ## 外部语料与规模
 

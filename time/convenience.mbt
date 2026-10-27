@@ -1,6 +1,13 @@
 ///|
 pub fn RationalTime::round(self : RationalTime) -> RationalTime {
-  RationalTime::new(@double.round(self.value()), self.rate()).unwrap()
+  RationalTime::new(
+    if self.value() < 0.0 {
+      -@double.round(-self.value())
+    } else {
+      @double.round(self.value())
+    },
+    self.rate(),
+  ).unwrap()
 }
 
 ///|

@@ -1,11 +1,13 @@
-# OTIO 完整实现开发记录
+# OTIO 模块开发记录（2026-10-27）
 
-本文件记录 0.1.3 后的实际增量；完整实现仍按 otio-roadmap.md 验收，不能将模块存在等同于全部功能通过。
+本轮从 `ff61f36` 初审整改版本继续，仓库版本更新为 0.2.0，未上传 Mooncakes。
 
-## 时间与无损 JSON
+- `a5dceef`：无损 OTIO 数值方言、时间码、区间关系、TimeTransform 与官方时间差分。
+- `bb60465`：标准 schema、媒体/Marker/空间类型、对象图和 7 个公开算法。
+- `de1c6b0`：OTIOZ/OTIOD、插件 Manifest/版本、任意对象文件 CLI、官方媒体包互读。
+- `2e5faa2`：嵌套变速/倒放/定格、递归转场余量、转场直接编辑、循环对象保护。
+- `fe7a75f`：修正干净 CI 环境的依赖索引初始化。
+- `2ce89a4`：按官方行为校验必需字段、插件发现入口；远程 JS/Native/Wasm GC 全通过。
+- 最终补测：负数半帧舍入与上游一致；补充图查询/空间边界测试、API 清单及文档。
 
-新增 time 算术、SMPTE 时码和 drop-frame、range 区间关系、transform（上游 applied_to 和数学 compose 分开）。新增 140 个由官方 OTIO 0.18.1 求值的时间、变换、区间测试。
-
-otiojson 支持任意 JSON 根、Inf/-Inf/Infinity/NaN、精确整数词法保留、独立深复制、等价比较及边界检查。Timeline 读写已接入，不再拒绝或降级 Metadata 特殊数值。此前文档中的“特殊数值拒绝”是 0.1.3 历史边界。
-
-仍需完成后续 schema、对象图、效果/媒体/标记、算法、适配器、插件及完整 API 审计；此记录不代替验收报告。
+各模块都提供实际入口，不以空目录、TODO 或示例代替实现。完整上游测试迁移和逐 API 兼容认证尚未完成，见 [模块与边界](otio-modules.md) 和 [路线图](otio-roadmap.md)。
