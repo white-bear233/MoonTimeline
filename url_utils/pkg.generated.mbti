@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/url_utils"
+
+// Values
+pub fn filepath_from_url(String, windows? : Bool) -> Result[String, String]
+
+pub fn url_from_filepath(String, windows? : Bool) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

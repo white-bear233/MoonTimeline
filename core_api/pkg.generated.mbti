@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "white-bear233/moontimeline/core_api"
+
+// Values
+pub fn deserialize_json_from_file(String, (String) -> Result[String, String]) -> Result[Json, String]
+
+pub fn deserialize_json_from_string(String) -> Result[Json, String]
+
+pub fn instance_from_schema(String, Int32, Json) -> Result[Json, String]
+
+pub fn release_to_schema_version_map() -> Json
+
+pub fn serialize_json_to_file(Json, String, (String, String) -> Result[Unit, String]) -> Result[Bool, String]
+
+pub fn serialize_json_to_string(Json) -> Result[String, String]
+
+pub fn type_version_map() -> Json
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

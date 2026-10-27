@@ -14,7 +14,7 @@
 - 内置适配器：OTIO JSON、OTIOZ、OTIOD，媒体打包、路径重定位、压缩和输入边界检查。
 - 扩展机制：适配器、四类钩子、媒体链接器、自定义 schema、版本清单、插件 Manifest 和宿主发现回调。
 
-本轮 4,455 项 MoonBit 测试（含 3,965 个新增官方差分用例）；官方时间/算法差分、21 个实际编辑导出、13 个上游样例和 OTIOZ/OTIOD 双向互读均纳入验证。各模块入口、证据和差异见 [模块索引](docs/otio-modules.md)；最新三后端执行结果见 [验证记录](docs/validation.md)。逐 API 覆盖和未完成项见 [差分报告](docs/api-conformance.md)。这些结果不等于上游全部 API 已完成兼容认证。
+本轮 7,193 项 MoonBit 测试（含 6,703 个生成用例，区分官方差分、宿主适配和危险输入防护）；官方时间/算法差分、21 个实际编辑导出、13 个上游样例和 OTIOZ/OTIOD 双向互读均纳入验证。各模块入口、证据和差异见 [模块索引](docs/otio-modules.md)；最新三后端执行结果见 [验证记录](docs/validation.md)。逐 API 覆盖和适配边界见 [差分报告](docs/api-conformance.md)。这些结果不等于上游全部 API 已完成兼容认证。
 
 ## 安装
 

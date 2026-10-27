@@ -24,8 +24,17 @@ pub fn Graph::insert(
     Ok(v) => v
     Err(e) => return Err(e)
   }
-  if index < 0 || index > a.length() {
-    return Err("child_index")
+  let index = if index < 0 {
+    let adjusted = index + a.length()
+    if adjusted < 0 {
+      0
+    } else {
+      adjusted
+    }
+  } else if index > a.length() {
+    a.length()
+  } else {
+    index
   }
   a.insert(index, child)
   match replace_children(node, a) {
@@ -87,11 +96,15 @@ pub fn Graph::neighbors(
   let mut right = if i + 1 < a.length() { Some(a[i + 1]) } else { None }
   if insert_gaps && node.schema_name() == "Transition" {
     for field in ["in_offset", "out_offset"] {
-      let d = match offset(node, field) {
+      let d = match offset_time(node, field) {
         Ok(v) => v
         Err(e) => return Err(e)
       }
-      let range = match span(0.0, d) {
+      let range = match
+        @range.TimeRange::new(
+          @time.RationalTime::new(0.0, d.rate()).unwrap(),
+          d,
+        ) {
         Ok(v) => v
         Err(e) => return Err(e)
       }
@@ -122,30 +135,49 @@ pub fn Graph::range_of_descendant(
     prefix(path, ancestor.length()) != ancestor {
     return Err("not_a_descendant")
   }
-  let mut r = match self.range_in_parent(path, trimmed~) {
-    Ok(Some(v)) => v
-    Ok(None) => return Ok(None)
-    Err(e) => return Err(e)
+  // OTIO 0.18.1's trimmed ancestor walk fails to advance its current child
+  // after the second parent. Keep that observable error in this compatibility
+  // query; transformed_range is the separate structural coordinate operation.
+  if trimmed && path.length() - ancestor.length() > 2 {
+    return Err("not_a_child")
   }
-  for i = path.length() - 1; i > ancestor.length(); i = i - 1 {
-    r = match self.transformed_range(r, prefix(path, i), prefix(path, i - 1)) {
+  let mut result : @range.TimeRange? = None
+  for i = path.length(); i > ancestor.length(); i = i - 1 {
+    let parent = match self.at(prefix(path, i - 1)) {
       Ok(v) => v
       Err(e) => return Err(e)
     }
-    if trimmed {
-      let parent = self.at(prefix(path, i - 1)).unwrap()
-      let bounds = match trimmed_range(parent) {
-        Ok(v) => v
-        Err(e) => return Err(e)
-      }
-      r = match r.intersection(bounds) {
-        Ok(Some(v)) => v
-        Ok(None) => return Ok(None)
-        Err(e) => return Err(e)
-      }
+    let r = match
+      (if trimmed {
+        trimmed_range_of_child_at_index(parent, path[i - 1])
+      } else {
+        range_of_child(parent, path[i - 1])
+      }) {
+      Ok(v) => v
+      Err(e) => return Err(e)
     }
+    result = Some(
+      match result {
+        None => r
+        Some(old) => {
+          let start = match add_time(old.start(), r.start()) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
+          match @range.TimeRange::new(start, old.duration()) {
+            Ok(v) => v
+            Err(e) => return Err(e)
+          }
+        }
+      },
+    )
   }
-  Ok(Some(r))
+  let r = result.unwrap()
+  if trimmed {
+    clamp_child_result(self.at(ancestor).unwrap(), r)
+  } else {
+    Ok(Some(r))
+  }
 }
 
 ///|

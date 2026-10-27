@@ -1,0 +1,5 @@
+import {
+  "white-bear233/moontimeline/schema",
+  "white-bear233/moontimeline/otiojson",
+  "white-bear233/moontimeline/plugins",
+}

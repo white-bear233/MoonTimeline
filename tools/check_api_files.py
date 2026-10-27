@@ -36,6 +36,17 @@ def main():
             assert json.loads(wire(restored)) == json.loads(wire(obj)), name
             # Detached values and metadata must survive another real file cycle.
             restored.to_json_file(str(work / (name + '-official.otio')))
+            for backend in ['core', 'adapters']:
+                source2=work / (name+'-'+backend+'-source.otio')
+                output2=work / (name+'-'+backend+'-result.otio')
+                if backend=='core':
+                    assert otio.core.serialize_json_to_file(obj,str(source2))
+                else:
+                    otio.adapters.write_to_file(obj,str(source2),adapter_name='otio_json')
+                result2=convert(source2,output2)
+                assert result2.returncode==0,result2.stderr
+                restored2=otio.core.deserialize_json_from_file(str(output2)) if backend=='core' else otio.adapters.read_from_file(str(output2),adapter_name='otio_json')
+                assert json.loads(wire(restored2))==json.loads(wire(obj)),(name,backend)
             count += 1
 
         source, output = work / 'bad.otio', work / 'must-not-exist.otio'
@@ -51,7 +62,7 @@ def main():
         output.write_bytes(b'keep existing file')
         result = convert(source, output)
         assert result.returncode != 0 and output.read_bytes() == b'keep existing file'
-    print(f'{count} SerializableObject file API roundtrips and 7 host failure cases passed')
+    print(f'{count*3} class/core/adapter file API roundtrips and 7 host failure cases passed')
 
 
 if __name__ == '__main__':

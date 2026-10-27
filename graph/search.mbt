@@ -106,6 +106,9 @@ pub fn Graph::ranges_of_all_children(
   }
   let out : Array[@range.TimeRange?] = []
   let parent = self.at(path).unwrap()
+  if parent.schema_name() == "Composition" {
+    return Err("not_implemented:range_of_all_children")
+  }
   if !trimmed && parent.schema_name() == "Track" && a.length() > 0 {
     let first = if a[0].schema_name() == "Transition" {
       offset_time(a[0], "in_offset")

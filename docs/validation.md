@@ -1,3 +1,26 @@
+# 0.2.0 公开 API 兼容性增量（2026-10-28）
+
+固定 OTIO 0.18.1、MoonBit 0.10.16+b1a0e846e。运行时不依赖 Python OTIO；Python 用于生成参考结果。
+
+| 验证 | 结果 |
+|---|---|
+| 本地 JS / Wasm GC | 各 7,193 项测试通过，含 6,703 项生成用例 |
+| 本地 Native | 静态检查通过；本机无 MSVC，运行测试由 Linux CI 执行 |
+| 格式 / 公开签名 / 生成可复现性 | fmt/info 通过；重新生成并格式化后，测试与两份证据索引逐字节一致 |
+| 逐入口证据 | 777 项：716 项关联生成用例，56 项关联真实文件测试；5 项 Python 绑定专用接口明确不移植 |
+| 异常与适配 | 2,712 项预期错误、107 项适配场景、22 项上游危险输入防护；不声称异常类和消息全部一致 |
+| 真实文件 API | 27 类对象 × class/core/adapter 三条路径，共 81 次双向互读；7 项宿主失败检查 |
+| 编辑 / 包装格式 / 原有回归 | 21 个编辑导出、OTIOZ/OTIOD 双向互读、8 项 CLI/回归通过 |
+| 官方基线 / 原始语料 | 时间与结构基线、12 个 CLI 工程对照及 13 个上游样例通过 |
+
+前一批提交 `15bba2a` 的 [CI](https://github.com/white-bear233/MoonTimeline/actions/runs/40524534060) 已通过 oracle、JS、Native、Wasm GC（当时 4,455 项测试）。本轮增量的远程执行状态以 [Actions 中对应提交](https://github.com/white-bear233/MoonTimeline/actions) 为准。
+
+入口映射、可复现命令和语言适配边界见 [逐 API 报告](api-conformance.md)。772 项有证据不等于所有输入已穷举；未逐例移植上游整套测试，不标称“100% OTIO 兼容”。0.2.0 尚未上传 Mooncakes。
+
+---
+
+以下记录保留当时的测试数量与范围。
+
 # 0.2.0 模块验收（2026-10-27）
 
 工具链 MoonBit 0.10.16+b1a0e846e，官方参照 opentimelineio==0.18.1。运行时依赖新增纯 MoonBit `moonbit-community/flate@0.9.0`。

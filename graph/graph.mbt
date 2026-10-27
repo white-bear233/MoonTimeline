@@ -92,19 +92,6 @@ pub fn Graph::parent(
 }
 
 ///|
-fn span(start : Double, duration : Double) -> Result[@range.TimeRange, String] {
-  let a = match @time.RationalTime::new(start, 1.0) {
-    Ok(v) => v
-    Err(_) => return Err("time_overflow")
-  }
-  let b = match @time.RationalTime::new(duration, 1.0) {
-    Ok(v) => v
-    Err(_) => return Err("time_overflow")
-  }
-  @range.TimeRange::new(a, b)
-}
-
-///|
 fn offset(object : @schema.Object, key : String) -> Result[Double, String] {
   let j = match object.get(key) {
     Some(j) => j
@@ -426,11 +413,26 @@ pub fn Graph::transformed_time(
   if from == to {
     return Ok(time)
   }
+  fn highest(path : Array[Int32]) -> Array[Int32] {
+    let mut length = path.length()
+    while length > 0 {
+      let parent = self.at(prefix(path, length - 1)).unwrap()
+      if !parent.is_a("Composition") {
+        break
+      }
+      length -= 1
+    }
+    prefix(path, length)
+  }
+  let root = highest(from)
+  if root != highest(to) {
+    return Err("different_composition_roots")
+  }
   let mut result = time
   let stop = if from.length() >= to.length() && prefix(from, to.length()) == to {
     to.length()
   } else {
-    0
+    root.length()
   }
   for i = from.length(); i > stop; i = i - 1 {
     let item = self.at(prefix(from, i)).unwrap()

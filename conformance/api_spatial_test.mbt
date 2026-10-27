@@ -97,6 +97,40 @@ test "spatial:vector-0" {
 }
 
 ///|
+test "spatial:normalize-0" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 0.0,\n    \"y\": 0.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
+test "spatial:normalizeExc-0" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 0.0,\n    \"y\": 0.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  assert_true(v.normalized(reject_zero=true) is Err(_))
+}
+
+///|
+test "spatial:normalizeNonNull-0" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 0.0,\n    \"y\": 0.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0 / 0.0)
+}
+
+///|
 test "spatial:vector-1" {
   let v = @schema.V2d::from_json(
     @otiojson.parse(
@@ -192,6 +226,42 @@ test "spatial:vector-1" {
   assert_eq(v.equal_with_error(b, 1.0 / 0.0, relative=true), true)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0), false)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0, relative=true), false)
+}
+
+///|
+test "spatial:normalize-1" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 3.0,\n    \"y\": 4.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.6)
+  api_number(vector.y, 0.8)
+}
+
+///|
+test "spatial:normalizeExc-1" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 3.0,\n    \"y\": 4.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, 0.6)
+  api_number(vector.y, 0.8)
+}
+
+///|
+test "spatial:normalizeNonNull-1" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 3.0,\n    \"y\": 4.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.6)
+  api_number(vector.y, 0.8)
 }
 
 ///|
@@ -293,6 +363,42 @@ test "spatial:vector-2" {
 }
 
 ///|
+test "spatial:normalize-2" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": -1.0,\n    \"y\": 2.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, -0.4472135954999579)
+  api_number(vector.y, 0.8944271909999159)
+}
+
+///|
+test "spatial:normalizeExc-2" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": -1.0,\n    \"y\": 2.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, -0.4472135954999579)
+  api_number(vector.y, 0.8944271909999159)
+}
+
+///|
+test "spatial:normalizeNonNull-2" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": -1.0,\n    \"y\": 2.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, -0.4472135954999579)
+  api_number(vector.y, 0.8944271909999159)
+}
+
+///|
 test "spatial:vector-3" {
   let v = @schema.V2d::from_json(
     @otiojson.parse(
@@ -388,6 +494,42 @@ test "spatial:vector-3" {
   assert_eq(v.equal_with_error(b, 1.0 / 0.0, relative=true), true)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0), false)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0, relative=true), false)
+}
+
+///|
+test "spatial:normalize-3" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e308,\n    \"y\": 1e308\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
+test "spatial:normalizeExc-3" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e308,\n    \"y\": 1e308\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
+test "spatial:normalizeNonNull-3" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e308,\n    \"y\": 1e308\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.0)
+  api_number(vector.y, 0.0)
 }
 
 ///|
@@ -489,6 +631,42 @@ test "spatial:vector-4" {
 }
 
 ///|
+test "spatial:normalize-4" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e-300,\n    \"y\": 1e-300\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.7071067811865475)
+  api_number(vector.y, 0.7071067811865475)
+}
+
+///|
+test "spatial:normalizeExc-4" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e-300,\n    \"y\": 1e-300\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, 0.7071067811865475)
+  api_number(vector.y, 0.7071067811865475)
+}
+
+///|
+test "spatial:normalizeNonNull-4" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": 1e-300,\n    \"y\": 1e-300\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.7071067811865475)
+  api_number(vector.y, 0.7071067811865475)
+}
+
+///|
 test "spatial:vector-5" {
   let v = @schema.V2d::from_json(
     @otiojson.parse(
@@ -587,6 +765,42 @@ test "spatial:vector-5" {
 }
 
 ///|
+test "spatial:normalize-5" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": Infinity,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
+test "spatial:normalizeExc-5" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": Infinity,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
+test "spatial:normalizeNonNull-5" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": Infinity,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0)
+}
+
+///|
 test "spatial:vector-6" {
   let v = @schema.V2d::from_json(
     @otiojson.parse(
@@ -682,6 +896,42 @@ test "spatial:vector-6" {
   assert_eq(v.equal_with_error(b, 1.0 / 0.0, relative=true), false)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0), false)
   assert_eq(v.equal_with_error(b, 0.0 / 0.0, relative=true), false)
+}
+
+///|
+test "spatial:normalize-6" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": NaN,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized().unwrap()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0 / 0.0)
+}
+
+///|
+test "spatial:normalizeExc-6" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": NaN,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized(reject_zero=true).unwrap()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0 / 0.0)
+}
+
+///|
+test "spatial:normalizeNonNull-6" {
+  let v = @schema.V2d::from_json(
+    @otiojson.parse(
+      "{\n    \"OTIO_SCHEMA\": \"V2d.1\",\n    \"x\": NaN,\n    \"y\": 1.0\n}",
+    ).unwrap(),
+  ).unwrap()
+  let vector = v.normalized_non_null()
+  api_number(vector.x, 0.0 / 0.0)
+  api_number(vector.y, 0.0 / 0.0)
 }
 
 ///|

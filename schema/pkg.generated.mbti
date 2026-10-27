@@ -21,6 +21,8 @@ pub fn tag(Json) -> String
 
 pub fn time_json(@time.RationalTime) -> Json
 
+pub fn timeline_from_clips(Array[Object]) -> Result[Object, String]
+
 pub fn vector_limits() -> (Double, Double, Double, Double, Int32)
 
 pub fn write(Object) -> Result[String, String]
@@ -96,16 +98,19 @@ pub struct Object {
 }
 pub fn Object::active_media(Self) -> Result[Self, String]
 pub fn Object::children(Self) -> Result[Array[Self], String]
+pub fn Object::composition_kind(Self) -> Result[String, String]
 pub fn Object::effects(Self) -> Result[Array[Effect], String]
 pub fn Object::equivalent(Self, Self) -> Bool
 pub fn Object::from_json(Json) -> Result[Self, String]
 pub fn Object::generator_parameters(Self) -> Result[Json, String]
 pub fn Object::get(Self, String) -> Json?
 pub fn Object::image_bounds(Self) -> Result[Box2d?, String]
+pub fn Object::is_a(Self, String) -> Bool
 pub fn Object::is_missing_reference(Self) -> Bool
 pub fn Object::is_unknown(Self) -> Bool
 pub fn Object::markers(Self) -> Result[Array[Marker], String]
 pub fn Object::markers_in_range(Self, @range.TimeRange) -> Result[Array[Marker], String]
+pub fn Object::media_reference(Self) -> Result[Self?, String]
 pub fn Object::metadata(Self) -> Result[Json, String]
 pub fn Object::name(Self) -> Result[String, String]
 pub fn Object::new(String) -> Result[Self, String]
@@ -125,6 +130,7 @@ pub fn Object::with_markers(Self, Array[Marker]) -> Result[Self, String]
 pub fn Object::with_media_references(Self, Map[String, Self], String) -> Result[Self, String]
 pub fn Object::with_metadata(Self, Json) -> Result[Self, String]
 pub fn Object::with_name(Self, String) -> Result[Self, String]
+pub fn Object::with_optional_media_references(Self, Map[String, Self?], String) -> Result[Self, String]
 pub fn Object::with_source_range(Self, @range.TimeRange?) -> Result[Self, String]
 
 pub(all) struct V2d {

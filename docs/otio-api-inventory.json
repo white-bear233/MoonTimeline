@@ -785,6 +785,80 @@
       "to_rgba_int_list"
     ]
   },
+  "functions": {
+    "opentime": [
+      "duration_from_start_end_time",
+      "duration_from_start_end_time_inclusive",
+      "from_frames",
+      "from_seconds",
+      "from_time_string",
+      "from_timecode",
+      "range_from_start_end_time",
+      "range_from_start_end_time_inclusive",
+      "to_frames",
+      "to_nearest_timecode",
+      "to_seconds",
+      "to_time_string",
+      "to_timecode"
+    ],
+    "core": [
+      "add_method",
+      "deprecated_field",
+      "deserialize_json_from_file",
+      "deserialize_json_from_string",
+      "downgrade_function_from",
+      "flatten_stack",
+      "install_external_keepalive_monitor",
+      "instance_from_schema",
+      "register_downgrade_function",
+      "register_serializable_object_type",
+      "register_type",
+      "register_upgrade_function",
+      "release_to_schema_version_map",
+      "serializable_field",
+      "serialize_json_to_file",
+      "serialize_json_to_string",
+      "set_type_record",
+      "type_version_map",
+      "upgrade_function_for"
+    ],
+    "schema": [
+      "timeline_from_clips"
+    ],
+    "adapters": [
+      "available_adapter_names",
+      "from_filepath",
+      "from_name",
+      "read_from_file",
+      "read_from_string",
+      "suffixes_with_defined_adapters",
+      "write_to_file",
+      "write_to_string"
+    ],
+    "plugins": [
+      "ActiveManifest",
+      "manifest_from_file",
+      "plugin_info_map"
+    ],
+    "hooks": [
+      "available_hookscript_names",
+      "available_hookscripts",
+      "names",
+      "run",
+      "scripts_attached_to"
+    ],
+    "media_linker": [
+      "available_media_linker_names",
+      "default_media_linker",
+      "from_name",
+      "linked_media_reference"
+    ],
+    "schemadef": [],
+    "url_utils": [
+      "filepath_from_url",
+      "url_from_filepath"
+    ]
+  },
   "algorithms": [
     "filtered_composition",
     "filtered_with_sequence_context",

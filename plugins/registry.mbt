@@ -94,12 +94,17 @@ pub fn Registry::register_hook(
 }
 
 ///|
-fn Registry::run_hooks(
+pub fn Registry::run_hooks(
   self : Registry,
   phase : String,
   document : Json,
   args : Json,
 ) -> Result[Json, String] {
+  if ![
+      "post_adapter_read", "post_media_linker", "pre_adapter_write", "post_adapter_write",
+    ].contains(phase) {
+    return Err("unknown_hook_phase")
+  }
   let args = match @otiojson.clone(args) {
     Ok(v) => v
     Err(e) => return Err(e)
@@ -231,7 +236,7 @@ pub fn Registry::read(
   }
   match media_linker {
     Some(name) => self.link_media(document, name, args~)
-    None => Ok(document)
+    None => self.run_hooks("post_media_linker", document, args)
   }
 }
 
@@ -254,11 +259,54 @@ pub fn Registry::write(
     Ok(v) => v
     Err(e) => return Err(e)
   }
+  Ok(text)
+}
+
+///|
+/// File IO belongs to the host. The string adapter and hooks remain portable.
+pub fn Registry::read_file(
+  self : Registry,
+  path : String,
+  read_file : (String) -> Result[String, String],
+  adapter~ : String = "otio_json",
+  media_linker~ : String? = None,
+  args~ : Json = Json::empty_object(),
+) -> Result[Json, String] {
+  let source = match read_file(path) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  self.read(source, adapter~, media_linker~, args~)
+}
+
+///|
+/// Match upstream's string-to-file fallback, including its two pre-write hook
+/// passes. post_adapter_write is a file event, never a write-to-string event.
+pub fn Registry::write_file(
+  self : Registry,
+  document : Json,
+  path : String,
+  write_file : (String, String) -> Result[Unit, String],
+  adapter~ : String = "otio_json",
+  args~ : Json = Json::empty_object(),
+) -> Result[String, String] {
+  let document = match self.run_hooks("pre_adapter_write", document, args) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  let source = match self.write(document, adapter~) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  match write_file(path, source) {
+    Err(e) => return Err(e)
+    _ => ()
+  }
   match self.run_hooks("post_adapter_write", document, args) {
     Err(e) => return Err(e)
     _ => ()
   }
-  Ok(text)
+  Ok(path)
 }
 
 ///|
@@ -389,6 +437,31 @@ pub fn Registry::write_versions(
   }
   match convert(document, 0) {
     Ok(j) => @otiojson.stringify(j)
+    Err(e) => Err(e)
+  }
+}
+
+///|
+pub fn Registry::link_media_reference(
+  self : Registry,
+  clip : Json,
+  name : String,
+  args~ : Json = Json::empty_object(),
+) -> Result[Json, String] {
+  let linker = match self.linkers.get(name) {
+    Some(v) => v
+    None => return Err("media_linker_not_found")
+  }
+  let input = match @otiojson.clone(clip) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  let args = match @otiojson.clone(args) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  match linker(input, args) {
+    Ok(v) => @otiojson.clone(v)
     Err(e) => Err(e)
   }
 }

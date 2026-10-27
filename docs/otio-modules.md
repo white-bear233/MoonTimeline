@@ -15,6 +15,7 @@
 | 序列化与迁移 | `otiojson`：任意根、NaN/Inf、精确数值词法；`schema`：Marker/Clip/Sequence 迁移；`plugins`：版本清单及自定义 schema 升降级 | 特殊值、未知字段、嵌套 Clip 降级、官方往返测试 |
 | 适配器 | `adapters`：OTIOZ/OTIOD、ZIP/DEFLATE、媒体三种策略、URL 重定位、路径/体积/重复项边界 | `check_bundles.py` 官方双向互读，中文和空格路径、媒体字节及路径逃逸测试 |
 | 插件 | `plugins.Registry`：适配器、媒体链接器、四类钩子、自定义 schema、版本清单、Manifest 原子加载、宿主文件发现 | 回调顺序、注册冲突、失败不污染注册表、嵌套版本测试 |
+| core_api / URL | 任意 JSON 根序列化、schema 实例化、固定上游版本表；POSIX/Windows URL 转换 | 模块级函数差分、81 次真实文件互读 |
 | 文件/CLI | Node 宿主连接 MoonBit：转换、打包/解包、flatten/filter/find/trim-range/展开转场；原有 inspect/validate/编辑命令保留 | 文件覆盖保护、官方互读、原有 8 项 CLI/回归 |
 
 所有公开签名由 `moon info` 生成在各包的 `pkg.generated.mbti`。上游类/成员清单在 [otio-api-inventory.json](otio-api-inventory.json)，由 `python tools/audit_api.py --check` 检查；清单列出成员不代表其已全部测试。
@@ -23,12 +24,12 @@
 
 - 可变 Python 对象及 parent 指针改为不可变对象值和 Graph 路径。`children()` 返回独立数组，列表的 append/extend/reverse/count/index 等操作使用 MoonBit Array，再通过 `with_children` 或 Graph 操作提交。重复挂接会产生独立副本；不会共享一个可变子对象。
 - 所有标准 schema 的数据字段均可通过 `Object.get/with_field` 访问；Marker、Effect、ImageSequence、Color、Box2d 等另有类型化接口。未知字段完整保留，未知类型不猜测时长或播放效果。
-- 新增 `opentime` 兼容类型保留官方无效时间、特殊浮点和负区间；原有 `time/range/transform` 是严格编辑类型，拒绝无效/非有限时间和负时长。异常通过 `Result` 表达，尚未逐一匹配 Python 异常类及消息。
+- 新增 `opentime` 兼容类型保留官方无效时间、特殊浮点和负区间；原有 `time/range/transform` 是严格编辑类型，拒绝无效/非有限时间和负时长。异常通过 `Result` 表达，已验证失败路径与副作用，但不承诺所有 Python 异常类及消息逐字一致。
 - 上游结构坐标转换忽略 TimeEffect；`graph` 保持该语义。`timeline` 的播放映射是本库明确的扩展契约：以 source_start 为锚点，启用的线性效果依次相乘；未知时间曲线返回无法求值。展示时长保持 OTIO 的 source_range.duration。
 - 倒放布局包含方向可能为 `(start,end]`，通过 `start_inclusive/end_inclusive` 和查询 API 表达。定格中的转场没有唯一切点，`cut_seconds=None`，CLI 输出 null。
-- `Registry.discover` 接收宿主提供的路径、读取回调及 Resolver；不直接执行清单中的 Python 脚本。已有 Python 插件需要宿主桥接或 MoonBit 实现。
+- `Registry.discover` 接收宿主提供的路径、读取回调及 Resolver；不直接执行清单中的 Python 脚本。已有 Python 插件需要宿主桥接或 MoonBit 实现。`Plugin` 提供懒加载/反射和完整的 `read_document/write_document` 参数协议；`ManifestContext` 提供宿主局部缓存，`PluginIO` 明确承接文件、Hook 和媒体链接器。
 
-本轮逐 API 差分和覆盖缺口见 [差分报告](api-conformance.md)，包含 3,965 个新增用例及逐成员证据。
+本轮逐 API 差分和覆盖缺口见 [差分报告](api-conformance.md)，包含 6,703 个生成用例、777 个入口的证据或绑定边界。
 
 ## 当前验收边界
 

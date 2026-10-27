@@ -10,6 +10,9 @@ test "objects:Adapter" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -31,6 +34,9 @@ test "objects:Clip" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -101,6 +107,9 @@ test "objects:Composable" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -139,6 +148,9 @@ test "objects:Composition" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -209,6 +221,9 @@ test "objects:Effect" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -245,6 +260,9 @@ test "objects:ExternalReference" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -290,6 +308,9 @@ test "objects:FreezeFrame" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -326,6 +347,9 @@ test "objects:Gap" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -404,6 +428,9 @@ test "objects:GeneratorReference" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -449,6 +476,9 @@ test "objects:HookScript" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -470,6 +500,9 @@ test "objects:ImageSequenceReference" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -515,6 +548,9 @@ test "objects:Item" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -585,6 +621,9 @@ test "objects:LinearTimeWarp" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -621,6 +660,9 @@ test "objects:Marker" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -657,6 +699,9 @@ test "objects:MediaLinker" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -678,6 +723,9 @@ test "objects:MediaReference" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -723,6 +771,9 @@ test "objects:MissingReference" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -768,6 +819,9 @@ test "objects:SchemaDef" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -789,6 +843,9 @@ test "objects:SerializableCollection" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -823,6 +880,9 @@ test "objects:SerializableObject" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
 }
 
 ///|
@@ -835,6 +895,9 @@ test "objects:SerializableObjectWithMetadata" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -871,6 +934,9 @@ test "objects:Stack" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -955,6 +1021,9 @@ test "objects:TimeEffect" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -991,6 +1060,9 @@ test "objects:Timeline" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -1037,6 +1109,9 @@ test "objects:Track" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -1121,6 +1196,9 @@ test "objects:Transition" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
   let changed = copy.with_name("修改 / 🎞️").unwrap()
   assert_true(
     changed.equivalent(
@@ -1169,4 +1247,7 @@ test "objects:PluginManifest" {
   assert_eq(obj.is_unknown(), false)
   let copy = @schema.Object::from_json(obj.to_json().unwrap()).unwrap()
   assert_eq(obj.equivalent(copy), true)
+  assert_true(
+    @schema.read(@schema.write(obj).unwrap()).unwrap().equivalent(obj),
+  )
 }

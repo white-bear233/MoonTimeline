@@ -22,6 +22,7 @@ classes['schema.Color']=[n for n in dir(o._otio.Color) if not n.startswith('_')]
 data={'upstream_version':'0.18.1','commit':'44236713c1db295a6ffc66189ae98dbdfd0cb9c4',
       'meaning':'Upstream inventory only; presence is not a passed compatibility test.',
       'classes':classes,
+      'functions':{name:[n for n in dir(module) if not n.startswith('_') and callable(getattr(module,n)) and not isinstance(getattr(module,n),type)] for name,module in modules.items() if name!='algorithms'},
       'algorithms':[n for n in dir(o.algorithms) if not n.startswith('_') and callable(getattr(o.algorithms,n))]}
 target=root/'docs/otio-api-inventory.json'
 text=json.dumps(data,ensure_ascii=False,indent=2)+'\n'

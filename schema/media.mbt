@@ -307,6 +307,47 @@ pub fn Object::with_media_references(
     }
     refs[key] = obj.to_json().unwrap()
   }
-  let obj = self.with_field("media_references", Json::object(refs)).unwrap()
+  let obj = match self.with_field("media_references", Json::object(refs)) {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
   obj.with_field("active_media_reference_key", Json::string(active))
+}
+
+///|
+/// Unlike active_media (the checked editing helper), the OTIO property may
+/// return None for a deserialized dangling active key.
+pub fn Object::media_reference(self : Object) -> Result[Object?, String] {
+  if self.schema_name() != "Clip" {
+    return Err("not_a_clip")
+  }
+  let key = match text(self, "active_media_reference_key") {
+    Ok(v) => v
+    Err(e) => return Err(e)
+  }
+  match self.get("media_references") {
+    Some(Object(m)) =>
+      match m.get(key) {
+        None | Some(Null) => Ok(None)
+        Some(j) =>
+          match Object::from_json(j) {
+            Ok(v) => Ok(Some(v))
+            Err(e) => Err(e)
+          }
+      }
+    _ => Err("invalid_media_map")
+  }
+}
+
+///|
+pub fn Object::with_optional_media_references(
+  self : Object,
+  media : Map[String, Object?],
+  active : String,
+) -> Result[Object, String] {
+  let values : Map[String, Object] = Map([])
+  for key, value in media {
+    values[key] = value.unwrap_or(Object::new("MissingReference").unwrap())
+  }
+  self.with_media_references(values, active)
 }

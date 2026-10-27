@@ -6,6 +6,41 @@ import {
 }
 
 // Values
+pub fn adapter_from_filepath(@schema.Object, String) -> Result[@schema.Object, String]
+
+pub fn default_media_linker(String?) -> Result[String, String]
+
+pub fn extend_manifest(@schema.Object, @schema.Object?) -> Result[@schema.Object, String]
+
+pub fn hook_names(@schema.Object) -> Result[Array[String], String]
+
+pub fn is_default_linker(@schema.Object, String) -> Bool
+
+pub fn linked_media_reference(@schema.Object, Json, String?, String?, Json, (@schema.Object, Json, Json) -> Result[Json, String]) -> Result[Json, String]
+
+pub fn manifest_from_file(String, (String) -> Result[String, String]) -> Result[ManifestSource, String]
+
+pub fn manifest_from_name(@schema.Object, String, kind? : String) -> Result[@schema.Object, String]
+
+pub fn manifest_from_suffix(@schema.Object, String) -> Result[@schema.Object, String]
+
+pub fn manifest_module(@schema.Object, String, (@schema.Object) -> Result[PluginModule, String], kind? : String, by_suffix? : Bool) -> Result[PluginModule, String]
+
+pub fn manifest_names(@schema.Object, String) -> Result[Array[String], String]
+
+pub fn manifest_plugins(@schema.Object, String) -> Result[Array[@schema.Object], String]
+
+pub fn media_linker_from_name(@schema.Object, String?, String?) -> Result[@schema.Object?, String]
+
+pub fn plugin_info_map(ManifestSource, (@schema.Object) -> Result[Json, String]) -> Result[Json, String]
+
+pub fn plugin_path(String, String?) -> Result[String, String]
+
+pub fn run_manifest_hooks(@schema.Object, String, Json, Json, (@schema.Object, Json, Json) -> Result[Json, String]) -> Result[Json, String]
+
+pub fn scripts_attached_to(@schema.Object, String) -> Result[Array[String], String]
+
+pub fn suffixes_with_defined_adapters(@schema.Object, (@schema.Object, String) -> Result[Bool, String], read? : Bool, write? : Bool) -> Result[Array[String], String]
 
 // Errors
 
@@ -17,6 +52,52 @@ pub(all) struct Adapter {
   write : (Json) -> Result[String, String]
 }
 
+pub struct ManifestContext {
+  // private fields
+}
+pub fn ManifestContext::active(Self, force_reload? : Bool) -> Result[ManifestSource, String]
+pub fn ManifestContext::new(() -> Result[ManifestSource, String]) -> Self
+
+pub(all) struct ManifestSource {
+  manifest : @schema.Object
+  source_files : Array[String]
+}
+
+pub(all) struct ModuleFunction {
+  arguments : Array[String]
+  doc : String?
+  invoke : (Json) -> Result[Json, String]
+}
+
+pub struct Plugin {
+  description : @schema.Object
+  manifest_path : String?
+  // private fields
+}
+pub fn Plugin::adapter_hook_names(Self) -> Result[Json, String]
+pub fn Plugin::execute(Self, String, Json) -> Result[Json, String]
+pub fn Plugin::has_feature(Self, String) -> Result[Bool, String]
+pub fn Plugin::load_module(Self) -> Result[PluginModule, String]
+pub fn Plugin::module_abs_path(Self, resolve? : (String, String?) -> Result[String, String]) -> Result[String, String]
+pub fn Plugin::new(@schema.Object, (@schema.Object, String) -> Result[PluginModule, String], manifest_path? : String?) -> Result[Self, String]
+pub fn Plugin::plugin_info_map(Self, default_linker? : String, resolve? : (String, String?) -> Result[String, String]) -> Result[Json, String]
+pub fn Plugin::read_document(Self, String, PluginIO, from_file? : Bool, adapter_arguments? : Json, hook_arguments? : Json, media_arguments? : Json, media_linker? : String?) -> Result[Json, String]
+pub fn Plugin::write_document(Self, Json, PluginIO, filepath? : String?, adapter_arguments? : Json, hook_arguments? : Json) -> Result[Json, String]
+
+pub(all) struct PluginIO {
+  read_file : (String) -> Result[String, String]
+  write_file : (String, String) -> Result[Unit, String]
+  hook : (String, Json, Json) -> Result[Json, String]
+  link_media : (Json, String, Json) -> Result[Json, String]
+}
+
+pub(all) struct PluginModule {
+  id : String
+  doc : String?
+  functions : Map[String, ModuleFunction]
+  schema_definitions : Json
+}
+
 pub struct Registry {
   // private fields
 }
@@ -25,17 +106,21 @@ pub fn Registry::adapter_names(Self) -> Array[String]
 pub fn Registry::convert_schema(Self, @schema.Object, Int32) -> Result[Json, String]
 pub fn Registry::discover(Self, Array[String], (String) -> Result[String, String], Resolver) -> Result[Array[String], String]
 pub fn Registry::link_media(Self, Json, String, args? : Json) -> Result[Json, String]
+pub fn Registry::link_media_reference(Self, Json, String, args? : Json) -> Result[Json, String]
 pub fn Registry::load_manifest(Self, @schema.Object, Resolver) -> Result[Unit, String]
 pub fn Registry::media_linker_names(Self) -> Array[String]
 pub fn Registry::new() -> Self
 pub fn Registry::read(Self, String, adapter? : String, media_linker? : String?, args? : Json) -> Result[Json, String]
+pub fn Registry::read_file(Self, String, (String) -> Result[String, String], adapter? : String, media_linker? : String?, args? : Json) -> Result[Json, String]
 pub fn Registry::register_adapter(Self, Adapter) -> Result[Unit, String]
 pub fn Registry::register_hook(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
 pub fn Registry::register_media_linker(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
 pub fn Registry::register_schema(Self, SchemaDefinition) -> Result[Unit, String]
 pub fn Registry::register_version_manifest(Self, String, Map[String, Int32]) -> Result[Unit, String]
+pub fn Registry::run_hooks(Self, String, Json, Json) -> Result[Json, String]
 pub fn Registry::upgrade_document(Self, Json) -> Result[Json, String]
 pub fn Registry::write(Self, Json, adapter? : String, args? : Json) -> Result[String, String]
+pub fn Registry::write_file(Self, Json, String, (String, String) -> Result[Unit, String], adapter? : String, args? : Json) -> Result[String, String]
 pub fn Registry::write_versions(Self, Json, String) -> Result[String, String]
 
 pub(all) struct Resolver {
