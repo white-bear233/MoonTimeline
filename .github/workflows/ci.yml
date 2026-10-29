@@ -76,3 +76,5 @@ jobs:
           node tools/build-js.mjs
           python tools/check_corpus.py --native "$PWD/_build/native/debug/build/cmd/native/native.exe"
           python tools/check_review.py --native "$PWD/_build/native/debug/build/cmd/native/native.exe"
+      - name: Verify published 0.2.0 in a fresh consumer
+        run: python tools/check_published.py --version 0.2.0 --targets ${{ matrix.target }}

@@ -1,0 +1,111 @@
+///|
+fn near(actual : Double, expected : Double) -> Unit raise {
+  assert_true((actual - expected).abs() < 0.00000001)
+}
+
+///|
+fn seconds(value : Double) -> @time.RationalTime {
+  @time.RationalTime::new(value, 1.0).unwrap()
+}
+
+///|
+fn fixture(name : String) -> @model.Timeline {
+  @otio.read(source(name)).unwrap()
+}
+
+///|
+fn track(value : @model.Timeline) -> @model.Track {
+  match value.tracks.children[0] {
+    @model.Track(value) => value
+    _ => abort("expected track")
+  }
+}
+
+///|
+fn clip(value : @model.Timeline, index : Int32) -> @model.Clip {
+  match track(value).children[index] {
+    @model.Clip(value) => value
+    _ => abort("expected clip")
+  }
+}
+
+///|
+test "installed core, schema, graph, plugin and URL packages are callable" {
+  let obj = @schema.read(source("internal")).unwrap()
+  let graph = @graph.Graph::new(obj)
+  assert_eq(graph.find_clips().unwrap().length(), 2)
+  let raw = @core_api.deserialize_json_from_string(source("internal")).unwrap()
+  assert_true(@otiojson.equivalent(raw, obj.to_json().unwrap()))
+  let registry = @plugins.Registry::new()
+  assert_true(@otiojson.equivalent(registry.read(source("internal")).unwrap(), raw))
+  assert_eq(@url_utils.filepath_from_url("file:///a%20b.mov").unwrap(), "/a b.mov")
+  let scalar = @opentime.RationalTime::new(value=48.0, rate=24.0)
+  near(scalar.to_seconds(), 2.0)
+}
+
+///|
+test "transition full range, visible range and neighbor constraints" {
+  let value = fixture("internal")
+  let range = @timeline.transition_range(track(value), 1).unwrap()
+  near(range.start().to_seconds().unwrap(), 3.0)
+  near(range.duration().to_seconds().unwrap(), 1.5)
+  let layout = @timeline.layout(value).unwrap()
+  near(layout.duration_seconds, 7.0)
+  near(layout.transitions[0].start_seconds, 3.0)
+  near(layout.transitions[0].end_seconds, 4.5)
+  near(layout.transitions[0].visible_start_seconds, 3.0)
+  near(layout.transitions[0].visible_end_seconds, 4.5)
+  assert_eq(layout.transitions[0].left_path, Some("/tracks/children/0/children/0"))
+  assert_eq(layout.transitions[0].right_path, Some("/tracks/children/0/children/2"))
+  assert_true(!@validate.has_errors(@validate.validate(value)))
+  let clipped = fixture("internal")
+  clipped.tracks.children[0] = @model.Track({
+    ..track(clipped),
+    source_range: Some(@range.TimeRange::new(seconds(3.5), seconds(0.75)).unwrap()),
+  })
+  let visible = @timeline.layout(clipped).unwrap().transitions[0]
+  near(visible.start_seconds, -0.5)
+  near(visible.end_seconds, 1.0)
+  near(visible.visible_start_seconds, 0.0)
+  near(visible.visible_end_seconds, 0.75)
+  let before = @otio.write(value).unwrap()
+  assert_true(@edit.trim(value, 0, 0, seconds(0.0), seconds(0.5)) is Err(_))
+  assert_true(@edit.split(value, 0, 0, seconds(3.5)) is Err(_))
+  assert_eq(@otio.write(value).unwrap(), before)
+  let invalid = fixture("internal")
+  track(invalid).children.insert(1, track(invalid).children[1])
+  assert_true(@validate.validate(invalid).any(fn(i) { i.code == "adjacent_transitions" }))
+  assert_true(@timeline.layout(invalid) is Err(_))
+}
+
+///|
+test "retime maps fast slow reverse freeze and preserves edit annotations" {
+  for pair in [("double", 2.0), ("half", 0.5), ("reverse", -1.0), ("freeze", 0.0)] {
+    let original = fixture(pair.0)
+    let before = @otio.write(original).unwrap()
+    let layout = @timeline.layout(original).unwrap()
+    near(layout.duration_seconds, 4.0)
+    near(layout.items[0].source_at(1.5).unwrap().to_seconds().unwrap(), 10.0 + 1.5 * pair.1)
+    assert_true(!@validate.has_errors(@validate.validate(original)))
+    let split = @edit.split(original, 0, 0, seconds(1.5)).unwrap()
+    assert_true(@otiojson.equivalent(@otiojson.parse(@otio.write(split).unwrap()).unwrap(), @otiojson.parse(source("split_" + pair.0)).unwrap()))
+    let trimmed = @edit.trim(original, 0, 0, seconds(1.0), seconds(2.0)).unwrap()
+    assert_true(@otiojson.equivalent(@otiojson.parse(@otio.write(trimmed).unwrap()).unwrap(), @otiojson.parse(source("trim_" + pair.0)).unwrap()))
+    let gap = @edit.insert_gap(original, 0, 0, seconds(1.0)).unwrap()
+    assert_eq(clip(gap, 1).attributes.extra.stringify(), clip(original, 0).attributes.extra.stringify())
+    assert_eq(clip(gap, 1).attributes.metadata.stringify(), clip(original, 0).attributes.metadata.stringify())
+    assert_eq(@otio.write(original).unwrap(), before)
+    // A mutation of the edited left piece must not affect the original or right.
+    let right_before = clip(split, 1).attributes.extra.stringify()
+    match clip(split, 0).attributes.extra {
+      Object(values) => {
+        match values.get("markers") { Some(Array(markers)) => markers.clear(); _ => abort("markers") }
+        match values.get("effects") { Some(Array(effects)) => effects.clear(); _ => abort("effects") }
+      }
+      _ => abort("extra")
+    }
+    match clip(split, 0).attributes.metadata { Object(values) => values["changed"] = Json::boolean(true); _ => abort("metadata") }
+    assert_eq(clip(split, 1).attributes.extra.stringify(), right_before)
+    assert_eq(@otio.write(original).unwrap(), before)
+  }
+}

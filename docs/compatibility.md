@@ -41,4 +41,4 @@ python tools/audit_api.py --check
 node tools/check_external_corpus.mjs
 ```
 
-Native 核心与原有文件 CLI 在 Linux CI 中运行。0.2.0 尚未上传 Mooncakes，`moon add` 的已发布版本不包含本轮全部增量。
+Native 核心与原有文件 CLI 在 Linux CI 中运行。验收本轮功能请使用 `white-bear233/moontimeline@0.2.0`，不要混用整改前的 0.1.x；安装与复现步骤见仓库 README。

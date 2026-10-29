@@ -1,4 +1,36 @@
+# 0.2.0 发布与独立安装验收（2026-10-29）
+
+`white-bear233/moontimeline@0.2.0` 已正式发布到 [Mooncakes](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.0)。发布返回 `200 OK`；注册表确认最新版本为 `0.2.0`、未撤回、`build_status=success`，文档包可用。
+
+| 验证 | 结果 |
+|---|---|
+| 工具链 | MoonBit `0.10.16+b1a0e846e`；满足赛事最低版本要求 |
+| 发布包预检 | 打包后解压并检查通过；包含新模块、LICENSE 和 THIRD_PARTY_NOTICES.md |
+| 独立下载 | 在系统临时目录创建全新消费工程，通过 `moon add white-bear233/moontimeline@0.2.0` 从注册表安装；核对下载版本，无本地源码或 Git 替代依赖 |
+| 本地 JS / Wasm GC | 检查、构建、README 示例运行及各 3 组发布验收测试全部通过 |
+| Transition | 完整/裁切可见时间范围、左右相邻路径、非法邻接及编辑失败后原工程不变 |
+| 变速与字段 | 快放、慢放、倒放、定格素材映射；split/trim 完整 JSON 对照、gap 保留；Marker、Metadata、Effects 和扩展字段保留及副本独立性 |
+| 持续集成 | 三后端原有检查、构建和 7,193 项核心测试保留；新增三个后端各自从注册表安装并验证发布包 |
+
+发布 ZIP 的 SHA-256 与注册表一致：`ce22e4038487b608890860e4f320997c009d2778a30ae33617d0c273ad111e62`。
+
+在仓库根目录复现（Python 3.10+、Node.js 22、MoonBit 0.10.16+；无需登录 Mooncakes）：
+
+```sh
+python tools/check_published.py --version 0.2.0 --keep
+```
+
+脚本默认验证 JS 和 Wasm GC；Linux / 已安装本机编译工具的环境可使用 `--targets native`。成功时输出精确下载版本和 `PASS`；`--keep` 保留消费工程供检查。测试输入由脚本独立构造，不依赖 Python OTIO 或仓库 fixtures。
+
+发布前核心实现 `46c4d04` 的 [三后端 CI](https://github.com/white-bear233/MoonTimeline/actions/runs/40537688701) 已通过；包含本轮发布安装检查的远程结果见 [Actions](https://github.com/white-bear233/MoonTimeline/actions)。Windows 本地未安装 MSVC，Native 的运行验证由 Linux CI 执行。
+
+本次完成发布与安装复现，不改变 [兼容边界](compatibility.md)，不等于上游全部 API 和异常行为已完成兼容认证。
+
+---
+
 # 0.2.0 公开 API 兼容性增量（2026-10-28）
+
+> 本节保留当时的验证与发布状态；当前 0.2.0 的指定版本安装和独立复现命令见仓库 README。
 
 固定 OTIO 0.18.1、MoonBit 0.10.16+b1a0e846e。运行时不依赖 Python OTIO；Python 用于生成参考结果。
 

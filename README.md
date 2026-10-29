@@ -18,20 +18,30 @@
 
 ## 安装
 
-本轮仓库修订为 0.2.0，尚未发布到 Mooncakes；`moon add` 获取已发布版本，本轮功能请先使用仓库源码验证。
+本轮版本为 **0.2.0**，包含转场约束、变速映射、字段保留及 OTIO 模块增量。安装时明确指定版本，避免使用整改前的 0.1.x。[Mooncakes 包页面](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.0)。
+
+核心库需要 MoonBit **0.10.16 或更高版本**；本项目 CI 固定验证 `0.10.16+b1a0e846e`。CLI 和浏览器示例使用 Node.js 22；Python 3.10+ 用于开发与发布验证，不是库的运行依赖。
+
+在新的独立项目中安装：
 
 ```sh
-moon add white-bear233/moontimeline
+moon new moontimeline-demo
+cd moontimeline-demo
+moon add white-bear233/moontimeline@0.2.0
 ```
 
-在 `moon.pkg` 中按需引入子包：
+将 `cmd/main/moon.pkg` 改为：
 
 ```
 import {
   "white-bear233/moontimeline/time" @timeline_time,
   "white-bear233/moontimeline/otio",
 }
+
+pkgtype(kind: "executable")
 ```
+
+将 `cmd/main/main.mbt` 改为以下内容：
 
 ```mbt
 ///|
@@ -42,6 +52,8 @@ fn main {
   println("换算到 30fps = \{converted.value()} 帧")
 }
 ```
+
+执行 `moon run cmd/main --target js`，应输出 `48 帧 @ 24fps = 2 秒` 和 `换算到 30fps = 60 帧`。也可使用 `--target wasm-gc`。
 
 读取一个 OTIO 工程：
 
@@ -70,7 +82,14 @@ match result {
 
 ## 命令行与浏览器演示
 
+这些工具在源码仓库中运行：
+
 ```sh
+git clone https://github.com/white-bear233/MoonTimeline.git
+cd MoonTimeline
+git checkout v0.2.0
+moon update
+moon run examples/time --target js
 node tools/build-js.mjs
 node cmd/moontimeline.mjs inspect fixtures/valid/gap_clip.otio
 node tools/serve.mjs   # http://127.0.0.1:4173/demo/index.html
@@ -107,6 +126,7 @@ node tools/build-js.mjs
 node --test tests/cli.test.mjs tests/regression.test.mjs
 python tools/oracle.py --check        # 需要 .venv 中的 opentimelineio 0.18.1
 python tools/check_review.py          # 实际编辑输出与完整字段保留
+python tools/check_published.py --version 0.2.0  # 在临时新项目中安装线上包并验证整改功能
 ```
 
 14 个开发里程碑与每步验收见 [开发计划](docs/development.md)，逐次验证记录见 [验证记录](docs/validation.md)。每个里程碑单独提交，不用空提交凑数量。

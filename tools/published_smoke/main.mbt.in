@@ -1,0 +1,7 @@
+///|
+fn main {
+  let time = @timeline_time.RationalTime::new(48.0, 24.0).unwrap()
+  let converted = time.rescaled_to(30.0).unwrap()
+  println("48 帧 @ 24fps = \{time.to_seconds().unwrap()} 秒")
+  println("换算到 30fps = \{converted.value()} 帧")
+}

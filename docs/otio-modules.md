@@ -37,4 +37,4 @@
 
 `otio`/`model` 保留较严格的 Timeline 编辑入口（例如 Track.kind 为 Audio/Video）；任意标准根对象与扩展字段通过新的 `schema`/`otiojson`/`graph` 使用。第三方 AAF/FCPXML/EDL 插件和视频编解码不属于 OTIO 主仓库内置模块范围。
 
-核心三个编译目标均由 CI 验证；新文件归档命令在 Node 宿主执行，Native 文件 CLI 目前仍是原有命令集。归档核心在 Native/Wasm GC 可通过宿主文件回调使用。0.2.0 为仓库版本，未上传 Mooncakes；以源码和对应 CI 记录验收。
+核心三个编译目标均由 CI 验证；新文件归档命令在 Node 宿主执行，Native 文件 CLI 目前仍是原有命令集。归档核心在 Native/Wasm GC 可通过宿主文件回调使用。本轮验收版本固定为 0.2.0；包安装和源码复现步骤见仓库 README。
