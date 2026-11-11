@@ -1,3 +1,43 @@
+# 0.2.1 当前工具链兼容性维护（2026-11-11）
+
+针对赛事持续可用性提醒，使用 [官方安装入口](https://www.moonbitlang.com/download/) 的 `latest` 实测。本机 `moon version --all` 输出：
+
+```text
+moon 0.1.20261104 (940aa18 2026-11-04)
+moonc v0.10.20+65efd5b93 (2026-11-05)
+moonrun 0.1.20261104 (940aa18 2026-11-04)
+Feature flags enabled: rr_moon_mod,rr_moon_pkg
+```
+
+本地环境为 Windows x64、Node.js 24.18.0、Python 3.11.3、OpenTimelineIO 0.18.1；Linux CI 使用 Node.js 22、Python 3.11 和同一固定 MoonBit 工具链。现有现代清单与 `moonbit-community/flate@0.9.0` 均可用，无须迁移清单或替换压缩依赖。
+
+发现并修复两处工具链兼容问题：
+
+- 旧 `derive(...)` 有 5 处弃用警告，并导致新版 `moon fmt --check` 失败；已改为 `#derive(...)`，更新编译器生成的公开签名（包括 Json 的标准库限定名）。
+- 动态 `Array` 的 JS 表示变化导致 CLI 参数解析崩溃，输出 `{"error":""}`、退出码 2。导出边界改为 `FixedArray[String]`，再转换给内部解析器；新增从真实 JS 数组调用的回归，覆盖中文/emoji 路径、选项、空输入、错误信息和输入不被修改。演示页载入也显式传入完整参数。
+
+| 验证 | 结果 |
+|---|---|
+| 源码格式 / 检查 / 构建 | 本地 JS、Wasm GC 通过，无编译警告；Native 静态检查通过 |
+| 核心测试 | 本地 JS / Wasm GC 各 7,193 项通过；Linux CI 三后端各 7,193 项通过 |
+| Node CLI / JS 回归 | 9 项通过（修复前 8 项中有 4 项失败） |
+| 示例与真实文件 | 时间、读写、编辑示例通过；21 个编辑导出、81 次文件 API 往返及 7 个宿主失败场景通过 |
+| OTIOZ / OTIOD 与上游语料 | 归档双向互读通过；13 个上游样例可读、可计算、可写回且结果稳定 |
+| 浏览器演示 | 本机 Chrome 载入示例、选择/拆分及撤销通过；拆分后 7 秒总时长不变，片段数 2→3，撤销恢复为 2 |
+| 生成数据 | 官方基线、API 清单及 6,703 项生成用例可复现，未更改预期结果 |
+| 发布候选 | 解压打包内容后检查、构建通过；包内 CLI / JS 回归 9 项通过 |
+| 线上 0.2.1 | Mooncakes 发布返回 200、文档构建成功；在全新消费工程下载精确版本，JS / Wasm GC 示例及各 3 组核心场景通过，下载包自身的 9 项 CLI / JS 回归通过 |
+
+核心修复提交 `4140bff` 的 [CI](https://github.com/white-bear233/MoonTimeline/actions/runs/43009427733) 已通过 oracle、JS、Wasm GC 和 Native。发布包自身的 CLI/JS 回归已纳入独立安装检查，以覆盖纯 MoonBit 测试无法发现的宿主数组接口问题；包含发布验证的最终远程结果见 [Actions](https://github.com/white-bear233/MoonTimeline/actions)。
+
+[Mooncakes 0.2.1](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.1) 已发布，注册表确认 `latest_version=0.2.1`、`build_status=success`、未撤回。发布 ZIP 的 SHA-256 与注册表一致：`742ad76511aaba46399f7f97a94f3c297df49b2aadebfd1405af835c2500b8cc`。
+
+CI 对提交/拉取请求固定使用 `0.10.20+65efd5b93`；每周一北京时间 09:00 和手动运行使用官方 `latest`，持续执行三个后端的检查、构建、测试及注册表安装验证。Windows Native 尚未在本机运行，需 MSVC / Windows SDK；本轮 Native 运行证据来自 Linux CI。
+
+复现：按 README 安装 0.2.1 后执行 `python tools/check_published.py --version 0.2.1 --keep`。0.2.0 的核心消费示例在新工具链下仍通过，但其 Node CLI 需要这次修复，不能只依据核心测试判定全部入口兼容。本次维护不改变 OTIO 的既有兼容边界。
+
+---
+
 # 0.2.0 发布与独立安装验收（2026-10-29）
 
 `white-bear233/moontimeline@0.2.0` 已正式发布到 [Mooncakes](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.0)。发布返回 `200 OK`；注册表确认最新版本为 `0.2.0`、未撤回、`build_status=success`，文档包可用。

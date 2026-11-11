@@ -15,7 +15,7 @@ function render(){
  $('json').value=source;$('download').disabled=false;$('undo').disabled=!history.length;selected=null;for(const a of ['split','trim','gap'])$(a).disabled=true;$('selection').textContent='点击时间线选择片段';$('source').textContent='素材时间与轨道时间分别显示。';
 }
 function select(p,b){selected=p;document.querySelectorAll('.clip').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('selection').textContent=`轨道 ${p.track} / 片段 ${p.index} · ${p.name||'空白'}`;$('source').textContent=`轨道 ${p.start}–${p.end} 秒 · 素材起点 ${p.source_start} 秒`;for(const a of ['split','trim','gap'])$(a).disabled=false;}
-function load(text){const r=JSON.parse(run(text,'inspect',0,0,0,0,1));if(r.code!==0)throw new Error(JSON.parse(r.body).error);source=text;history=[];render();status('工程已载入，检查完成。');}
+function load(text){const r=JSON.parse(run(text,'inspect',0,0,0,0,1,''));if(r.code!==0)throw new Error(JSON.parse(r.body).error);source=text;history=[];render();status('工程已载入，检查完成。');}
 $('example').onclick=async()=>{try{const r=await fetch('../fixtures/valid/gap_clip.otio');if(!r.ok)throw new Error('示例加载失败');load(await r.text());}catch(e){status(e.message,true);}};
 $('file').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>16000000)throw new Error('文件超过 16 MB');load(await f.text());}catch(e){status(e.message,true);}};
 $('load').onclick=()=>{try{load($('json').value);}catch(e){status(e.message,true);}};

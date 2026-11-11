@@ -1,8 +1,8 @@
 """Install the published package in a fresh consumer and verify release behavior.
 
 No local path dependency, source checkout, Python OTIO or login token is used.
-Requires Python 3.10+, Node.js, MoonBit >= 0.10.16, and registry network access.
-Usage: python tools/check_published.py --version 0.2.0 --keep
+Requires Python 3.10+, Node.js 22+, MoonBit >= 0.10.20, and registry network access.
+Usage: python tools/check_published.py --version 0.2.1 --keep
 """
 import argparse
 import copy
@@ -134,7 +134,7 @@ def installed_version(package_dir):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", default="0.2.0", help="Exact Mooncakes package version")
+    parser.add_argument("--version", default="0.2.1", help="Exact Mooncakes package version")
     parser.add_argument("--moon", help="Path to moon executable")
     parser.add_argument("--keep", action="store_true", help="Keep temporary consumer for inspection")
     parser.add_argument("--targets", nargs="+", choices=["js", "wasm-gc", "native"], default=["js", "wasm-gc"])
@@ -151,8 +151,8 @@ def main():
         create_consumer(directory)
         version = run([moon, "version", "--all"], directory)
         compiler = re.search(r"moonc\s+v?(\d+)\.(\d+)\.(\d+)", version)
-        if not compiler or tuple(map(int, compiler.groups())) < (0, 10, 16):
-            raise RuntimeError("MoonBit compiler >= 0.10.16 is required")
+        if not compiler or tuple(map(int, compiler.groups())) < (0, 10, 20):
+            raise RuntimeError("MoonBit compiler >= 0.10.20 is required")
         run([moon, "add", PACKAGE + "@" + args.version], directory)
         manifest = (directory / "moon.mod").read_text(encoding="utf-8")
         if PACKAGE + "@" + args.version not in manifest or re.search(r"\b(path|git)\s*[:=]", manifest):
@@ -176,6 +176,13 @@ def main():
             if "48 帧 @ 24fps = 2 秒" not in output or "换算到 30fps = 60 帧" not in output:
                 raise RuntimeError("README example output differs on " + target)
             run([moon, "test", "--target", target], directory)
+            if target == "js":
+                # Also exercise the downloaded JS export boundary. MoonBit-only
+                # tests cannot detect a JavaScript Array / MoonBit Array mismatch.
+                run([moon, "build", "--target", "js"], package_dir)
+                write(package_dir / "dist/moontimeline.mjs",
+                      (package_dir / "_build/js/debug/build/bridge/bridge.js").read_text(encoding="utf-8"))
+                run(["node", "--test", "tests/cli.test.mjs", "tests/regression.test.mjs"], package_dir)
         success = True
         print("PASS: exact published version, new modules, example and core release scenarios on " + ", ".join(args.targets))
     finally:

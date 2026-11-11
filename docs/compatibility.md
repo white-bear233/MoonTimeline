@@ -1,4 +1,4 @@
-# OTIO 兼容状态（0.2.0 仓库版本）
+# OTIO 兼容状态（0.2.1）
 
 完整模块、入口、测试证据与 MoonBit API 差异见 [模块索引](otio-modules.md)。参考固定为 OTIO v0.18.1；全部核心层已有实现，但尚未完成上游整套测试逐例迁移与逐成员兼容认证。
 
@@ -41,4 +41,4 @@ python tools/audit_api.py --check
 node tools/check_external_corpus.mjs
 ```
 
-Native 核心与原有文件 CLI 在 Linux CI 中运行。验收本轮功能请使用 `white-bear233/moontimeline@0.2.0`，不要混用整改前的 0.1.x；安装与复现步骤见仓库 README。
+Native 核心与原有文件 CLI 在 Linux CI 中运行。当前使用 `white-bear233/moontimeline@0.2.1` 与 MoonBit 0.10.20+；该修订适配 JavaScript 数组接口，保留 0.2.0 的 OTIO 功能范围。安装与复现步骤见仓库 README。

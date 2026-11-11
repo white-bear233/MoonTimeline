@@ -18,16 +18,18 @@
 
 ## 安装
 
-本轮版本为 **0.2.0**，包含转场约束、变速映射、字段保留及 OTIO 模块增量。安装时明确指定版本，避免使用整改前的 0.1.x。[Mooncakes 包页面](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.0)。
+当前版本为 **0.2.1**，包含转场约束、变速映射、字段保留及 OTIO 模块增量，并修复新版工具链下的 JavaScript 参数数组接口。[Mooncakes 包页面](https://mooncakes.io/docs/white-bear233/moontimeline@0.2.1)。
 
-核心库需要 MoonBit **0.10.16 或更高版本**；本项目 CI 固定验证 `0.10.16+b1a0e846e`。CLI 和浏览器示例使用 Node.js 22；Python 3.10+ 用于开发与发布验证，不是库的运行依赖。
+0.2.1 及当前 `main` 分支请使用 MoonBit **0.10.20 或更高版本**。2026-11-11 使用官方下载的 `moonc v0.10.20+65efd5b93` 验证，完整版本与结果见 [维护记录](docs/validation.md)。CLI 和浏览器示例使用 Node.js 22 或更高版本；Python 3.10+ 用于开发与发布验证，不是库的运行依赖。旧版 0.2.0 的核心库仍可使用，但其 Node CLI 在新工具链重新构建后存在参数数组兼容问题，应升级至 0.2.1。
+
+CI 在提交和拉取请求中固定验证 `0.10.20+65efd5b93`，每周一北京时间 09:00 及手动运行时检查官方 `latest`，均覆盖 JS、Wasm GC 和 Linux Native 的检查、构建、测试及已发布包的独立安装。Windows 本地验证 JS 和 Wasm GC；Windows Native 需要另行安装 MSVC / Windows SDK，未在本机执行运行验证。
 
 在新的独立项目中安装：
 
 ```sh
 moon new moontimeline-demo
 cd moontimeline-demo
-moon add white-bear233/moontimeline@0.2.0
+moon add white-bear233/moontimeline@0.2.1
 ```
 
 将 `cmd/main/moon.pkg` 改为：
@@ -87,7 +89,7 @@ match result {
 ```sh
 git clone https://github.com/white-bear233/MoonTimeline.git
 cd MoonTimeline
-git checkout v0.2.0
+git checkout v0.2.1
 moon update
 moon run examples/time --target js
 node tools/build-js.mjs
@@ -126,7 +128,7 @@ node tools/build-js.mjs
 node --test tests/cli.test.mjs tests/regression.test.mjs
 python tools/oracle.py --check        # 需要 .venv 中的 opentimelineio 0.18.1
 python tools/check_review.py          # 实际编辑输出与完整字段保留
-python tools/check_published.py --version 0.2.0  # 在临时新项目中安装线上包并验证整改功能
+python tools/check_published.py --version 0.2.1  # 独立安装验证核心功能和发布包的 JS/CLI 接口
 ```
 
 14 个开发里程碑与每步验收见 [开发计划](docs/development.md)，逐次验证记录见 [验证记录](docs/validation.md)。每个里程碑单独提交，不用空提交凑数量。
