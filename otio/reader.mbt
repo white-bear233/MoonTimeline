@@ -1,9 +1,10 @@
 ///|
+#derive(Debug)
 pub(all) struct Diagnostic {
   code : String
   path : String
   message : String
-} derive(Debug)
+}
 
 ///|
 pub extend Diagnostic with @debug.Debug::{to_repr}

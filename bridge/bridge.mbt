@@ -15,8 +15,9 @@ pub fn run(
 }
 
 ///|
-pub fn parse(args : Array[String]) -> String {
-  match @app.parse_args(args) {
+// JavaScript callers pass native arrays; dynamic MoonBit Array has a different ABI.
+pub fn parse(args : FixedArray[String]) -> String {
+  match @app.parse_args(Array::from_fixed_array(args)) {
     Ok(c) => @app.config_json(c)
     Err(e) => Json::object({ "error": Json::string(e) }).stringify()
   }

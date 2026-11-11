@@ -2,6 +2,7 @@
 package "white-bear233/moontimeline/model"
 
 import {
+  "moonbitlang/core/json",
   "white-bear233/moontimeline/range",
   "white-bear233/moontimeline/time",
 }
@@ -9,7 +10,7 @@ import {
 // Values
 pub fn check_tree(Timeline) -> Result[Unit, String]
 
-pub fn schema_name(Json) -> String
+pub fn schema_name(@json.Json) -> String
 
 pub fn transition_of(Item) -> Result[Transition?, String]
 
@@ -18,10 +19,10 @@ pub fn transition_of(Item) -> Result[Transition?, String]
 // Types and methods
 pub(all) struct Attributes {
   name : String
-  metadata : Json
+  metadata : @json.Json
   enabled : Bool
-  color : Json
-  extra : Json
+  color : @json.Json
+  extra : @json.Json
 }
 pub fn Attributes::new(String) -> Self
 pub fn Attributes::playback_scalar(Self) -> Result[Double, String]
@@ -46,23 +47,23 @@ pub(all) enum Item {
   Gap(Gap)
   Stack(Stack)
   Track(Track)
-  Opaque(Json)
+  Opaque(@json.Json)
 }
 pub fn Item::playback_scalar(Self) -> Result[Double, String]
 
 pub(all) enum MediaKind {
   External(String)
   Missing
-  Opaque(Json)
+  Opaque(@json.Json)
 }
 
 pub(all) struct MediaReference {
   name : String
-  metadata : Json
+  metadata : @json.Json
   kind : MediaKind
   available_range : @range.TimeRange?
-  available_image_bounds : Json
-  extra : Json
+  available_image_bounds : @json.Json
+  extra : @json.Json
 }
 
 pub(all) struct Stack {
@@ -73,10 +74,10 @@ pub(all) struct Stack {
 
 pub(all) struct Timeline {
   name : String
-  metadata : Json
+  metadata : @json.Json
   global_start_time : @time.RationalTime?
   tracks : Stack
-  extra : Json
+  extra : @json.Json
 }
 
 pub(all) struct Track {

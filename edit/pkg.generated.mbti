@@ -2,6 +2,7 @@
 package "white-bear233/moontimeline/edit"
 
 import {
+  "moonbitlang/core/json",
   "white-bear233/moontimeline/model",
   "white-bear233/moontimeline/time",
 }
@@ -11,7 +12,7 @@ pub fn insert_gap(@model.Timeline, Int32, Int32, @time.RationalTime) -> Result[@
 
 pub fn insert_gap_at(@model.Timeline, Array[Int32], Int32, @time.RationalTime) -> Result[@model.Timeline, String]
 
-pub fn insert_transition(@model.Timeline, Array[Int32], Int32, Json) -> Result[@model.Timeline, String]
+pub fn insert_transition(@model.Timeline, Array[Int32], Int32, @json.Json) -> Result[@model.Timeline, String]
 
 pub fn remove_transition(@model.Timeline, Array[Int32]) -> Result[@model.Timeline, String]
 

@@ -2,6 +2,7 @@
 package "white-bear233/moontimeline/plugins"
 
 import {
+  "moonbitlang/core/json",
   "white-bear233/moontimeline/schema",
 }
 
@@ -16,7 +17,7 @@ pub fn hook_names(@schema.Object) -> Result[Array[String], String]
 
 pub fn is_default_linker(@schema.Object, String) -> Bool
 
-pub fn linked_media_reference(@schema.Object, Json, String?, String?, Json, (@schema.Object, Json, Json) -> Result[Json, String]) -> Result[Json, String]
+pub fn linked_media_reference(@schema.Object, @json.Json, String?, String?, @json.Json, (@schema.Object, @json.Json, @json.Json) -> Result[@json.Json, String]) -> Result[@json.Json, String]
 
 pub fn manifest_from_file(String, (String) -> Result[String, String]) -> Result[ManifestSource, String]
 
@@ -32,11 +33,11 @@ pub fn manifest_plugins(@schema.Object, String) -> Result[Array[@schema.Object],
 
 pub fn media_linker_from_name(@schema.Object, String?, String?) -> Result[@schema.Object?, String]
 
-pub fn plugin_info_map(ManifestSource, (@schema.Object) -> Result[Json, String]) -> Result[Json, String]
+pub fn plugin_info_map(ManifestSource, (@schema.Object) -> Result[@json.Json, String]) -> Result[@json.Json, String]
 
 pub fn plugin_path(String, String?) -> Result[String, String]
 
-pub fn run_manifest_hooks(@schema.Object, String, Json, Json, (@schema.Object, Json, Json) -> Result[Json, String]) -> Result[Json, String]
+pub fn run_manifest_hooks(@schema.Object, String, @json.Json, @json.Json, (@schema.Object, @json.Json, @json.Json) -> Result[@json.Json, String]) -> Result[@json.Json, String]
 
 pub fn scripts_attached_to(@schema.Object, String) -> Result[Array[String], String]
 
@@ -48,8 +49,8 @@ pub fn suffixes_with_defined_adapters(@schema.Object, (@schema.Object, String) -
 pub(all) struct Adapter {
   name : String
   suffixes : Array[String]
-  read : (String) -> Result[Json, String]
-  write : (Json) -> Result[String, String]
+  read : (String) -> Result[@json.Json, String]
+  write : (@json.Json) -> Result[String, String]
 }
 
 pub struct ManifestContext {
@@ -66,7 +67,7 @@ pub(all) struct ManifestSource {
 pub(all) struct ModuleFunction {
   arguments : Array[String]
   doc : String?
-  invoke : (Json) -> Result[Json, String]
+  invoke : (@json.Json) -> Result[@json.Json, String]
 }
 
 pub struct Plugin {
@@ -74,28 +75,28 @@ pub struct Plugin {
   manifest_path : String?
   // private fields
 }
-pub fn Plugin::adapter_hook_names(Self) -> Result[Json, String]
-pub fn Plugin::execute(Self, String, Json) -> Result[Json, String]
+pub fn Plugin::adapter_hook_names(Self) -> Result[@json.Json, String]
+pub fn Plugin::execute(Self, String, @json.Json) -> Result[@json.Json, String]
 pub fn Plugin::has_feature(Self, String) -> Result[Bool, String]
 pub fn Plugin::load_module(Self) -> Result[PluginModule, String]
 pub fn Plugin::module_abs_path(Self, resolve? : (String, String?) -> Result[String, String]) -> Result[String, String]
 pub fn Plugin::new(@schema.Object, (@schema.Object, String) -> Result[PluginModule, String], manifest_path? : String?) -> Result[Self, String]
-pub fn Plugin::plugin_info_map(Self, default_linker? : String, resolve? : (String, String?) -> Result[String, String]) -> Result[Json, String]
-pub fn Plugin::read_document(Self, String, PluginIO, from_file? : Bool, adapter_arguments? : Json, hook_arguments? : Json, media_arguments? : Json, media_linker? : String?) -> Result[Json, String]
-pub fn Plugin::write_document(Self, Json, PluginIO, filepath? : String?, adapter_arguments? : Json, hook_arguments? : Json) -> Result[Json, String]
+pub fn Plugin::plugin_info_map(Self, default_linker? : String, resolve? : (String, String?) -> Result[String, String]) -> Result[@json.Json, String]
+pub fn Plugin::read_document(Self, String, PluginIO, from_file? : Bool, adapter_arguments? : @json.Json, hook_arguments? : @json.Json, media_arguments? : @json.Json, media_linker? : String?) -> Result[@json.Json, String]
+pub fn Plugin::write_document(Self, @json.Json, PluginIO, filepath? : String?, adapter_arguments? : @json.Json, hook_arguments? : @json.Json) -> Result[@json.Json, String]
 
 pub(all) struct PluginIO {
   read_file : (String) -> Result[String, String]
   write_file : (String, String) -> Result[Unit, String]
-  hook : (String, Json, Json) -> Result[Json, String]
-  link_media : (Json, String, Json) -> Result[Json, String]
+  hook : (String, @json.Json, @json.Json) -> Result[@json.Json, String]
+  link_media : (@json.Json, String, @json.Json) -> Result[@json.Json, String]
 }
 
 pub(all) struct PluginModule {
   id : String
   doc : String?
   functions : Map[String, ModuleFunction]
-  schema_definitions : Json
+  schema_definitions : @json.Json
 }
 
 pub struct Registry {
@@ -103,38 +104,38 @@ pub struct Registry {
 }
 pub fn Registry::adapter_for_suffix(Self, String) -> Result[String, String]
 pub fn Registry::adapter_names(Self) -> Array[String]
-pub fn Registry::convert_schema(Self, @schema.Object, Int32) -> Result[Json, String]
+pub fn Registry::convert_schema(Self, @schema.Object, Int32) -> Result[@json.Json, String]
 pub fn Registry::discover(Self, Array[String], (String) -> Result[String, String], Resolver) -> Result[Array[String], String]
-pub fn Registry::link_media(Self, Json, String, args? : Json) -> Result[Json, String]
-pub fn Registry::link_media_reference(Self, Json, String, args? : Json) -> Result[Json, String]
+pub fn Registry::link_media(Self, @json.Json, String, args? : @json.Json) -> Result[@json.Json, String]
+pub fn Registry::link_media_reference(Self, @json.Json, String, args? : @json.Json) -> Result[@json.Json, String]
 pub fn Registry::load_manifest(Self, @schema.Object, Resolver) -> Result[Unit, String]
 pub fn Registry::media_linker_names(Self) -> Array[String]
 pub fn Registry::new() -> Self
-pub fn Registry::read(Self, String, adapter? : String, media_linker? : String?, args? : Json) -> Result[Json, String]
-pub fn Registry::read_file(Self, String, (String) -> Result[String, String], adapter? : String, media_linker? : String?, args? : Json) -> Result[Json, String]
+pub fn Registry::read(Self, String, adapter? : String, media_linker? : String?, args? : @json.Json) -> Result[@json.Json, String]
+pub fn Registry::read_file(Self, String, (String) -> Result[String, String], adapter? : String, media_linker? : String?, args? : @json.Json) -> Result[@json.Json, String]
 pub fn Registry::register_adapter(Self, Adapter) -> Result[Unit, String]
-pub fn Registry::register_hook(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
-pub fn Registry::register_media_linker(Self, String, (Json, Json) -> Result[Json, String]) -> Result[Unit, String]
+pub fn Registry::register_hook(Self, String, (@json.Json, @json.Json) -> Result[@json.Json, String]) -> Result[Unit, String]
+pub fn Registry::register_media_linker(Self, String, (@json.Json, @json.Json) -> Result[@json.Json, String]) -> Result[Unit, String]
 pub fn Registry::register_schema(Self, SchemaDefinition) -> Result[Unit, String]
 pub fn Registry::register_version_manifest(Self, String, Map[String, Int32]) -> Result[Unit, String]
-pub fn Registry::run_hooks(Self, String, Json, Json) -> Result[Json, String]
-pub fn Registry::upgrade_document(Self, Json) -> Result[Json, String]
-pub fn Registry::write(Self, Json, adapter? : String, args? : Json) -> Result[String, String]
-pub fn Registry::write_file(Self, Json, String, (String, String) -> Result[Unit, String], adapter? : String, args? : Json) -> Result[String, String]
-pub fn Registry::write_versions(Self, Json, String) -> Result[String, String]
+pub fn Registry::run_hooks(Self, String, @json.Json, @json.Json) -> Result[@json.Json, String]
+pub fn Registry::upgrade_document(Self, @json.Json) -> Result[@json.Json, String]
+pub fn Registry::write(Self, @json.Json, adapter? : String, args? : @json.Json) -> Result[String, String]
+pub fn Registry::write_file(Self, @json.Json, String, (String, String) -> Result[Unit, String], adapter? : String, args? : @json.Json) -> Result[String, String]
+pub fn Registry::write_versions(Self, @json.Json, String) -> Result[String, String]
 
 pub(all) struct Resolver {
   adapter : (@schema.Object) -> Result[Adapter, String]
-  hook : (@schema.Object) -> Result[(Json, Json) -> Result[Json, String], String]
-  media_linker : (@schema.Object) -> Result[(Json, Json) -> Result[Json, String], String]
+  hook : (@schema.Object) -> Result[(@json.Json, @json.Json) -> Result[@json.Json, String], String]
+  media_linker : (@schema.Object) -> Result[(@json.Json, @json.Json) -> Result[@json.Json, String], String]
   schema : (@schema.Object) -> Result[SchemaDefinition, String]
 }
 
 pub(all) struct SchemaDefinition {
   name : String
   version : Int32
-  upgrade : (Json, Int32) -> Result[Json, String]
-  downgrade : (Json, Int32) -> Result[Json, String]
+  upgrade : (@json.Json, Int32) -> Result[@json.Json, String]
+  downgrade : (@json.Json, Int32) -> Result[@json.Json, String]
 }
 
 // Type aliases

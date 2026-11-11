@@ -16,11 +16,12 @@ pub fn write(@model.Timeline) -> Result[String, Diagnostic]
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct Diagnostic {
   code : String
   path : String
   message : String
-} derive(@debug.Debug)
+}
 pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
 // Type aliases

@@ -1,27 +1,30 @@
 ///|
 /// Errors are explicit; invalid values never enter RationalTime.
+#derive(Debug, Eq)
 pub(all) enum TimeError {
   InvalidValue
   InvalidRate
   NumericOverflow
   UnsafeInteger
-} derive(Debug, Eq)
+}
 
 ///|
 /// Frame rounding is opt-in. Nearest ties are rounded away from zero.
+#derive(Debug, Eq)
 pub(all) enum Rounding {
   Floor
   Ceil
   TowardZero
   NearestAway
-} derive(Debug, Eq)
+}
 
 ///|
 /// Immutable OTIO-style value/rate time, not an integer millisecond count.
+#derive(Debug)
 pub struct RationalTime {
   priv value : Double
   priv rate : Double
-} derive(Debug)
+}
 
 ///|
 fn finite(value : Double) -> Bool {

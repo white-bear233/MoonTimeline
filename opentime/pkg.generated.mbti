@@ -2,6 +2,7 @@
 package "white-bear233/moontimeline/opentime"
 
 import {
+  "moonbitlang/core/json",
   "white-bear233/moontimeline/range",
   "white-bear233/moontimeline/time",
 }
@@ -36,7 +37,7 @@ pub fn RationalTime::ceil(Self) -> Self
 pub fn RationalTime::checked(Self) -> Result[@time.RationalTime, @time.TimeError]
 pub fn RationalTime::equals(Self, Self) -> Bool
 pub fn RationalTime::floor(Self) -> Self
-pub fn RationalTime::from_json(Json) -> Result[Self, String]
+pub fn RationalTime::from_json(@json.Json) -> Result[Self, String]
 pub fn RationalTime::greater(Self, Self) -> Bool
 pub fn RationalTime::greater_equal(Self, Self) -> Bool
 pub fn RationalTime::is_invalid_time(Self) -> Bool
@@ -50,7 +51,7 @@ pub fn RationalTime::round(Self) -> Self
 pub fn RationalTime::strictly_equal(Self, Self) -> Bool
 pub fn RationalTime::subtract(Self, Self) -> Self
 pub fn RationalTime::to_frames(Self, rate? : Double) -> Result[Int32, String]
-pub fn RationalTime::to_json(Self) -> Json
+pub fn RationalTime::to_json(Self) -> @json.Json
 pub fn RationalTime::to_nearest_timecode(Self, rate? : Double, drop_frame? : Bool?) -> Result[String, @time.TimeError]
 pub fn RationalTime::to_seconds(Self) -> Double
 pub fn RationalTime::to_time_string(Self) -> Result[String, @time.TimeError]
@@ -73,7 +74,7 @@ pub fn TimeRange::is_valid_range(Self) -> Bool
 pub fn TimeRange::new(start_time? : RationalTime, duration? : RationalTime) -> Self
 pub fn TimeRange::relates(Self, Self, @range.Relation, epsilon? : Double) -> Bool
 pub fn TimeRange::relates_time(Self, RationalTime, @range.Relation, epsilon? : Double) -> Result[Bool, String]
-pub fn TimeRange::to_json(Self) -> Json
+pub fn TimeRange::to_json(Self) -> @json.Json
 
 pub(all) struct TimeTransform {
   offset : RationalTime
@@ -85,7 +86,7 @@ pub fn TimeTransform::apply_time(Self, RationalTime) -> RationalTime
 pub fn TimeTransform::apply_transform(Self, Self) -> Self
 pub fn TimeTransform::equals(Self, Self) -> Bool
 pub fn TimeTransform::new(offset? : RationalTime, scale? : Double, rate? : Double) -> Self
-pub fn TimeTransform::to_json(Self) -> Json
+pub fn TimeTransform::to_json(Self) -> @json.Json
 
 // Type aliases
 

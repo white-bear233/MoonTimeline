@@ -2,6 +2,7 @@
 package "white-bear233/moontimeline/timeline"
 
 import {
+  "moonbitlang/core/json",
   "white-bear233/moontimeline/model",
   "white-bear233/moontimeline/range",
   "white-bear233/moontimeline/time",
@@ -18,7 +19,7 @@ pub fn item_at(@model.Timeline, Array[Int32]) -> Result[@model.Item, String]
 
 pub fn layout(@model.Timeline) -> Result[Layout, String]
 
-pub fn opaque_schema(Json) -> String
+pub fn opaque_schema(@json.Json) -> String
 
 pub fn path_of(Array[Int32]) -> String
 

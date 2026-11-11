@@ -1,6 +1,17 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {run} from '../dist/moontimeline.mjs';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {run,parse} from '../dist/moontimeline.mjs';
 const original=readFileSync('fixtures/valid/gap_clip.otio','utf8');
 const call=(s,a='inspect',ti=0,ii=0,at=0,d=0,r=24)=>JSON.parse(run(s,a,ti,ii,at,d,r,''));
+
+test('JS arrays cross the argument boundary without panic or mutation',()=>{
+ const args=['split','素材/片段 🎬.otio','--track','2','--clip','3','--at-frame','48','--rate','24','--output','输出/新片段.otio'];
+ const before=[...args];
+ const config=JSON.parse(parse(args));
+ assert.equal(config.action,'split');assert.equal(config.input,args[1]);assert.equal(config.output,args.at(-1));
+ assert.equal(config.track,2);assert.equal(config.item,3);assert.equal(config.at,48);assert.equal(config.rate,24);
+ assert.deepEqual(args,before);
+ assert.match(JSON.parse(parse([])).error,/Usage:/);
+ assert.match(JSON.parse(parse(['inspect','file.otio','--unknown','x'])).error,/Unknown, duplicate or incomplete option/);
+});
 test('size limit and malformed JSON cannot crash the API',()=>{
  for(const s of [' '.repeat(4000001),'['.repeat(100)+']'.repeat(100),'null','[]','{"OTIO_SCHEMA":', '{"x":1,"x":2}'])assert.equal(call(s).code,2);
 });

@@ -1,8 +1,12 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "white-bear233/moontimeline/adapters"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn bundle(Json, Map[String, Bytes], policy? : MediaPolicy) -> Result[Bundle, String]
+pub fn bundle(@json.Json, Map[String, Bytes], policy? : MediaPolicy) -> Result[Bundle, String]
 
 pub fn decode_url_path(String) -> Result[String, String]
 
@@ -20,7 +24,7 @@ pub fn safe_relative_path(String) -> Bool
 pub struct Bundle {
   // private fields
 }
-pub fn Bundle::document(Self) -> Json
+pub fn Bundle::document(Self) -> @json.Json
 pub fn Bundle::entries(Self) -> Map[String, Bytes]
 pub fn Bundle::to_otioz(Self, max_bytes? : Int32) -> Result[Bytes, String]
 

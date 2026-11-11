@@ -1,5 +1,10 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 1'
 permissions:
   contents: read
 jobs:
@@ -16,6 +21,8 @@ jobs:
       - run: python tools/audit_api.py --check
   moonbit:
     runs-on: ubuntu-latest
+    env:
+      MOONBIT_VERSION: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'latest' || '0.10.20+65efd5b93' }}
     strategy:
       matrix:
         target: [js, native, wasm-gc]
@@ -24,10 +31,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install pinned MoonBit
+      - name: Install MoonBit (${{ env.MOONBIT_VERSION }})
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moon.sh
-          bash /tmp/install-moon.sh 0.10.16+b1a0e846e
+          bash /tmp/install-moon.sh "$MOONBIT_VERSION"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
       - run: moon update

@@ -23,9 +23,10 @@ pub fn smpte_rates() -> Array[Double]
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub struct RationalTime {
   // private fields
-} derive(@debug.Debug)
+}
 pub fn RationalTime::add(Self, Self) -> Result[Self, TimeError]
 pub fn RationalTime::almost_equal(Self, Self, delta? : Double) -> Bool
 pub fn RationalTime::ceil(Self) -> Self
@@ -48,22 +49,24 @@ pub fn RationalTime::to_timecode(Self, rate? : Double, drop_frame? : Bool?) -> R
 pub fn RationalTime::value(Self) -> Double
 pub fn RationalTime::value_rescaled_to(Self, Double) -> Result[Double, TimeError]
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Rounding {
   Floor
   Ceil
   TowardZero
   NearestAway
-} derive(Eq, @debug.Debug)
+}
 pub fn Rounding::equal(Self, Self) -> Bool
 pub fn Rounding::not_equal(Self, Self) -> Bool
 pub fn Rounding::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TimeError {
   InvalidValue
   InvalidRate
   NumericOverflow
   UnsafeInteger
-} derive(Eq, @debug.Debug)
+}
 pub fn TimeError::equal(Self, Self) -> Bool
 pub fn TimeError::not_equal(Self, Self) -> Bool
 pub fn TimeError::to_repr(Self) -> @debug.Repr

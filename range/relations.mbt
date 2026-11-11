@@ -103,6 +103,7 @@ pub fn TimeRange::clamp_time(
 }
 
 ///|
+#derive(Eq)
 pub(all) enum Relation {
   Contains
   Overlaps
@@ -112,7 +113,7 @@ pub(all) enum Relation {
   Finishes
   Intersects
   Equal
-} derive(Eq)
+}
 
 ///|
 /// OTIO/Allen predicates. Contains and Overlaps are strict interval relations;

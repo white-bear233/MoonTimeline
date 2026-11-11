@@ -11,6 +11,7 @@ pub fn from_start_end(@time.RationalTime, @time.RationalTime, inclusive? : Bool)
 // Errors
 
 // Types and methods
+#derive(Eq)
 pub(all) enum Relation {
   Contains
   Overlaps
@@ -20,7 +21,7 @@ pub(all) enum Relation {
   Finishes
   Intersects
   Equal
-} derive(Eq)
+}
 pub fn Relation::equal(Self, Self) -> Bool
 pub fn Relation::not_equal(Self, Self) -> Bool
 
